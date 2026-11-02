@@ -1,0 +1,86 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Welcome | JobFit AI - Intelligent Resume &amp; Job Matching Platform{% endblock %}
+
+{% block content %}
+<!-- Welcome / Landing Hero Section -->
+<div class="row justify-content-center py-5">
+    <div class="col-lg-10 col-xl-8 text-center">
+        <!-- Brand Title / Logo Header -->
+        <div class="d-inline-flex align-items-center justify-content-center p-3 mb-4 rounded-circle bg-navy text-emerald shadow-sm" style="width: 80px; height: 80px;">
+            <i class="bi bi-cpu-fill display-4" style="color: var(--emerald-500);"></i>
+        </div>
+
+        <h1 class="display-4 fw-extrabold text-dark mb-3">
+            Welcome to <span class="text-emerald" style="color: var(--emerald-600);">JobFit AI</span>
+        </h1>
+
+        <!-- Short Professional Introduction Paragraph -->
+        <p class="fs-5 text-muted leading-relaxed mb-4 px-md-4">
+            JobFit AI is an intelligent resume and job matching platform that helps job seekers analyze their resumes, discover suitable job opportunities, identify missing skills, and improve their career prospects. Recruiters can post job opportunities and find suitable candidates based on resume-job matching.
+        </p>
+
+        <!-- Primary Action Buttons -->
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-4">
+            {% if user.is_authenticated %}
+                <a href="{% url 'matching_app:dashboard' %}" class="btn btn-emerald btn-lg px-4 py-3">
+                    <i class="bi bi-speedometer2 me-2"></i>Go to My Dashboard
+                </a>
+                <a href="{% url 'matching_app:job_list' %}" class="btn btn-navy btn-lg px-4 py-3" style="background-color: var(--navy-800); border-color: var(--navy-700);">
+                    <i class="bi bi-briefcase me-2"></i>Browse Active Jobs
+                </a>
+            {% else %}
+                <a href="{% url 'matching_app:jobseeker_signup' %}" class="btn btn-emerald btn-lg px-4 py-3">
+                    <i class="bi bi-person-plus-fill me-2"></i>Register as Job Seeker
+                </a>
+                <a href="{% url 'matching_app:recruiter_signup' %}" class="btn btn-navy btn-lg px-4 py-3" style="background-color: var(--navy-800); border-color: var(--navy-700);">
+                    <i class="bi bi-building-gear me-2"></i>Register as Recruiter
+                </a>
+                <a href="{% url 'matching_app:login' %}" class="btn btn-outline-navy btn-lg px-4 py-3">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Platform Overview Cards -->
+<div class="row g-4 my-4">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm p-4 text-center">
+            <div class="stat-icon mx-auto mb-3" style="background: var(--navy-50); color: var(--navy-700);">
+                <i class="bi bi-file-earmark-person"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Automated Resume Analysis</h5>
+            <p class="text-muted small mb-0">
+                Parses PDF and Word resumes to extract candidate skills, contact details, education, and work experience.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm p-4 text-center">
+            <div class="stat-icon mx-auto mb-3" style="background: var(--emerald-50); color: var(--emerald-600);">
+                <i class="bi bi-cpu"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Hybrid AI Job Matching</h5>
+            <p class="text-muted small mb-0">
+                Combines explicit skill overlap ratios with Sentence-BERT vector embeddings to calculate exact job-fit scores.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm p-4 text-center">
+            <div class="stat-icon mx-auto mb-3" style="background: #fff7ed; color: #c2410c;">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Skill Gap &amp; AI Interviews</h5>
+            <p class="text-muted small mb-0">
+                Identifies missing technical competencies, recommends targeted courses, and conducts proctored AI screening interviews.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

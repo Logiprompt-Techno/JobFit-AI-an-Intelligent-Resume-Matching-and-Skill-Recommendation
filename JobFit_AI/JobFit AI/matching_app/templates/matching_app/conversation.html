@@ -1,0 +1,170 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Conversation with {{ other_user.username }} | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-3">
+    <div class="col-lg-9">
+        <!-- Back and Header Navigation -->
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <a href="{% if audit_mode %}{% url 'matching_app:dashboard' %}{% else %}{% url 'matching_app:inbox' %}{% endif %}" class="btn btn-outline-navy btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <div class="company-logo-placeholder" style="width: 36px; height: 36px; font-size: 1rem; background: var(--navy-800); color: white;">
+                    {{ other_user.username|slice:":1"|upper }}
+                </div>
+                <h5 class="fw-bold mb-0 text-dark">{{ header_title }}</h5>
+                {% if audit_mode %}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-shield-lock-fill me-1"></i>Admin Audit Mode</span>
+                {% elif other_user.profile and other_user.profile.role == 'RECRUITER' %}
+                    <span class="badge bg-navy">Recruiter</span>
+                {% else %}
+                    <span class="badge bg-success">Job Seeker</span>
+                {% endif %}
+            </div>
+
+            <!-- Clear Chat & Report User Triggers -->
+            <div class="d-flex align-items-center gap-2">
+                {% if thread_messages and not audit_mode %}
+                    <form method="post" action="{% url 'matching_app:delete_conversation' other_user.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to clear your conversation history with {{ other_user.username }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold">
+                            <i class="bi bi-trash3 me-1"></i>Clear Chat
+                        </button>
+                    </form>
+                {% endif %}
+                {% if other_user != user and not audit_mode %}
+                    <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#reportUserModal">
+                        <i class="bi bi-flag-fill me-1"></i>Report User
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if audit_mode %}
+            <div class="alert alert-warning border-0 shadow-sm mb-3">
+                <i class="bi bi-shield-lock-fill me-2"></i><strong>Privacy Protection Safeguard Active:</strong> Raw message content is hidden from platform administrators to ensure user conversation privacy. Message timestamps, senders, recipients, and topics are logged below for platform safety auditing.
+            </div>
+        {% endif %}
+
+        <!-- Chat Container -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-navy text-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-chat-text-fill text-emerald me-2" style="color: var(--emerald-500);"></i>Message Thread</h5>
+                <span class="badge bg-light text-dark"><i class="bi bi-shield-lock me-1 text-success"></i>Encrypted &amp; Monitored for Safety</span>
+            </div>
+            <div class="card-body p-4 bg-light" style="max-height: 480px; overflow-y: auto;">
+                {% for msg in thread_messages %}
+                    <div class="d-flex mb-3 {% if msg.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                        <div class="card border-0 shadow-sm p-3" style="max-width: 85%; {% if msg.sender == user %}background: var(--navy-900); color: white; border-radius: 18px 18px 0px 18px;{% else %}background: white; color: var(--slate-900); border-radius: 18px 18px 18px 0px;{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center mb-1 gap-3">
+                                <strong class="small {% if msg.sender == user %}text-emerald{% else %}text-navy{% endif %}">
+                                    {{ msg.sender.username }} &rarr; {{ msg.recipient.username }}
+                                </strong>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="{% if msg.sender == user %}text-slate-300{% else %}text-muted{% endif %}" style="font-size: 0.75rem;">
+                                        {{ msg.created_at|date:"M d, Y H:i" }}
+                                    </small>
+                                    {% if not audit_mode %}
+                                        <form method="post" action="{% url 'matching_app:delete_message' msg.pk %}" class="d-inline" onsubmit="return confirm('Delete this message?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-link p-0 border-0 {% if msg.sender == user %}text-white-50 opacity-75 hover-opacity-100{% else %}text-muted opacity-75 hover-opacity-100{% endif %}" style="font-size: 0.85rem;" title="Delete Message">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if msg.subject %}
+                                <div class="fw-bold small mb-1 border-bottom pb-1 {% if msg.sender == user %}border-secondary{% else %}border-light{% endif %}">
+                                    Topic: {{ msg.subject }}
+                                </div>
+                            {% endif %}
+                            {% if audit_mode %}
+                                <p class="mb-0 small text-muted fst-italic">
+                                    <i class="bi bi-eye-slash-fill me-1 text-warning"></i>[Message Body Hidden for User Privacy Safeguard]
+                                </p>
+                            {% else %}
+                                <p class="mb-0 small leading-relaxed">{{ msg.body|linebreaksbr }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-chat-square-dots display-4 d-block mb-2"></i>
+                        No messages recorded in this thread yet.
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Quick Reply Footer Form (Hidden in Admin Audit Mode) -->
+            {% if not audit_mode %}
+                <div class="card-footer bg-white p-3 border-top">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            {{ form.subject }}
+                        </div>
+                        <div class="mb-2">
+                            {{ form.body }}
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-emerald">
+                                <i class="bi bi-send-fill me-1"></i>Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Report User Modal -->
+{% if other_user != user %}
+<div class="modal fade" id="reportUserModal" tabindex="-1" aria-labelledby="reportUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-header-title text-white mb-0" id="reportUserModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Report Account: {{ other_user.username }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'matching_app:submit_user_report' other_user.pk %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        If this user is engaging in fraudulent behavior, asking for money, spamming, or violating safety terms, submit a report below. Reports are reviewed by Master Administration.
+                    </p>
+
+                    <div class="mb-3">
+                        <label for="reportReason" class="form-label fw-bold">Reason for Report</label>
+                        <select name="reason" id="reportReason" class="form-select" required>
+                            <option value="SCAM">⚠️ Scam / Fraud / Requesting Money</option>
+                            <option value="FAKE_JOB">🛑 Fake Job Offer / Impersonation</option>
+                            <option value="HARASSMENT">🤬 Inappropriate Behavior / Harassment</option>
+                            <option value="SPAM">📧 Spam / Unsolicited Advertising</option>
+                            <option value="OTHER">Other Safety Concern</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reportDescription" class="form-label fw-bold">Explanation / Evidence Details</label>
+                        <textarea name="description" id="reportDescription" class="form-control" rows="4" placeholder="Describe what happened or quote suspicious message text..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold">
+                        <i class="bi bi-shield-slash me-1"></i>Submit Safety Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

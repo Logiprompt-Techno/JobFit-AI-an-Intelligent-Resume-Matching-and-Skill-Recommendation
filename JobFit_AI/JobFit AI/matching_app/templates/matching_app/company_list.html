@@ -1,0 +1,302 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Companies &amp; Career Portals | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-building text-emerald me-2" style="color: var(--emerald-500);"></i>Featured Companies &amp; Hiring Employers</h2>
+        <p class="text-muted mb-0">Browse platform employer profiles and official global tech career portals.</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <a href="{% url 'matching_app:job_list' %}" class="btn btn-outline-navy">
+            <i class="bi bi-briefcase me-1"></i>Browse Jobs
+        </a>
+        {% if is_recruiter %}
+            <a href="{% url 'matching_app:company_create' %}" class="btn btn-emerald">
+                <i class="bi bi-plus-circle me-1"></i>Add New Company
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if companies %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+        {% for company in companies %}
+            <div class="col">
+                <div class="card h-100 card-hover-lift shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            {% if company.logo %}
+                                <img src="{{ company.logo.url }}" alt="{{ company.name }}" class="company-logo-md">
+                            {% else %}
+                                <div class="company-logo-placeholder">
+                                    {{ company.name|slice:":1"|upper }}
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">
+                                    <a href="{% url 'matching_app:company_detail' company.pk %}" class="text-decoration-none text-dark">
+                                        {{ company.name }}
+                                    </a>
+                                </h5>
+                                <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ company.location|default:"Global" }}</small>
+                            </div>
+                        </div>
+
+                        <p class="card-text text-muted small mb-3">
+                            {{ company.description|default:"No overview provided."|truncatewords:20 }}
+                        </p>
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
+                            <span class="badge badge-cyan">
+                                <i class="bi bi-briefcase me-1"></i>{{ company.jobs.count }} Open Jobs
+                            </span>
+                            <a href="{% url 'matching_app:company_detail' company.pk %}" class="btn btn-outline-navy btn-sm">
+                                View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 bg-white rounded shadow-sm mb-5">
+        <i class="bi bi-building display-1 text-muted"></i>
+        <h4 class="mt-3 fw-bold">No Internal Companies Added Yet</h4>
+        <p class="text-muted">Create company profiles to associate with job postings.</p>
+        {% if is_recruiter %}
+            <a href="{% url 'matching_app:company_create' %}" class="btn btn-emerald mt-2">
+                <i class="bi bi-plus-circle me-1"></i>Add New Company
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+
+<!-- Featured Global Tech Enterprise Career Portals Section -->
+<div class="card shadow-sm border-0 mb-5 bg-white">
+    <div class="card-header bg-navy text-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-white">
+                <i class="bi bi-globe2 text-emerald me-2" style="color: var(--emerald-500);"></i>Top Global Enterprise Career Portals
+            </h4>
+            <small class="text-slate-300" style="color: #cbd5e1;">Explore official hiring hubs of leading global technology and IT corporations.</small>
+        </div>
+        <span class="badge bg-emerald px-3 py-2 fs-6">Direct Official Links</span>
+    </div>
+    <div class="card-body p-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            
+            <!-- Google Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-danger fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                G
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">Google Careers</h5>
+                                <span class="badge bg-primary">Cloud &amp; AI</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Explore engineering, AI research, cloud infrastructure, and product management roles at Google worldwide.
+                        </p>
+                    </div>
+                    <a href="https://careers.google.com" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm w-100 fw-semibold">
+                        Explore Google Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Microsoft Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-primary fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                MS
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">Microsoft Careers</h5>
+                                <span class="badge bg-info text-dark">Software &amp; Azure</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Discover career opportunities in Azure cloud, AI development, software engineering, and cybersecurity.
+                        </p>
+                    </div>
+                    <a href="https://careers.microsoft.com" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm w-100 fw-semibold text-dark">
+                        Explore Microsoft Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Amazon Jobs -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-warning fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                A
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">Amazon Jobs (AWS)</h5>
+                                <span class="badge bg-warning text-dark">AWS &amp; E-Commerce</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Apply for cloud architect, DevOps, software development engineer (SDE), and data engineering positions.
+                        </p>
+                    </div>
+                    <a href="https://www.amazon.jobs" target="_blank" rel="noopener noreferrer" class="btn btn-outline-warning btn-sm w-100 fw-semibold text-dark">
+                        Explore Amazon Jobs <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Meta Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-primary fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                ∞
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">Meta Careers</h5>
+                                <span class="badge bg-primary">Metaverse &amp; AI</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Join engineering teams building Llama AI models, PyTorch infrastructure, VR/AR, and social applications.
+                        </p>
+                    </div>
+                    <a href="https://www.metacareers.com" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm w-100 fw-semibold">
+                        Explore Meta Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Apple Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-dark fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">Apple Careers</h5>
+                                <span class="badge bg-dark">Hardware &amp; iOS</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Find opportunities in iOS/macOS software engineering, hardware design, machine learning, and services.
+                        </p>
+                    </div>
+                    <a href="https://www.apple.com/careers" target="_blank" rel="noopener noreferrer" class="btn btn-outline-dark btn-sm w-100 fw-semibold">
+                        Explore Apple Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- NVIDIA Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-success fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                N
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">NVIDIA Careers</h5>
+                                <span class="badge bg-success">AI &amp; GPUs</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Work at the forefront of GPU computing, CUDA development, deep learning research, and autonomous systems.
+                        </p>
+                    </div>
+                    <a href="https://www.nvidia.com/en-us/about-nvidia/careers/" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success btn-sm w-100 fw-semibold">
+                        Explore NVIDIA Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- IBM Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-navy fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.2rem; background-color: var(--navy-800); color: white;">
+                                IBM
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">IBM Careers</h5>
+                                <span class="badge bg-navy">Enterprise &amp; Quantum</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Explore careers in Watson AI, Hybrid Cloud (Red Hat), quantum computing, and enterprise IT consulting.
+                        </p>
+                    </div>
+                    <a href="https://www.ibm.com/careers" target="_blank" rel="noopener noreferrer" class="btn btn-outline-navy btn-sm w-100 fw-semibold">
+                        Explore IBM Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- TCS Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-secondary fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                                TCS
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">TCS Careers</h5>
+                                <span class="badge bg-secondary">IT Services &amp; Consulting</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Tata Consultancy Services hiring for global software engineering, digital transformation, and cloud services.
+                        </p>
+                    </div>
+                    <a href="https://www.tcs.com/careers" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm w-100 fw-semibold">
+                        Explore TCS Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Infosys Careers -->
+            <div class="col">
+                <div class="border rounded-3 p-4 h-100 shadow-sm hover-shadow bg-light d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-center bg-white text-primary fw-bold rounded-circle shadow-sm" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                                INF
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">Infosys Careers</h5>
+                                <span class="badge bg-info text-dark">Next-Gen Services</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Discover digital services, automation, cloud solutions, and software consulting openings worldwide.
+                        </p>
+                    </div>
+                    <a href="https://www.infosys.com/careers/" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm w-100 fw-semibold text-dark">
+                        Explore Infosys Careers <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

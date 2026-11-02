@@ -1,0 +1,72 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Schedule AI Screening Interview | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-8 col-lg-7">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-navy text-white text-center py-4">
+                <i class="bi bi-calendar-event display-5 text-emerald mb-2 d-block" style="color: var(--emerald-500);"></i>
+                <h4 class="fw-bold mb-1">Schedule AI Screening Interview</h4>
+                <p class="text-slate-300 small mb-0" style="color: #cbd5e1;">
+                    Propose 3 interview time slots for <strong>{{ candidate_user.username }}</strong> regarding the <strong>{{ application.job.job_title }}</strong> opening.
+                </p>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info border-0 shadow-sm mb-4">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    The candidate will receive an invitation message displaying these 3 time options. Once the candidate selects their preferred slot, the interview schedule will be confirmed and lock in for that exact time.
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.slot_1.id_for_label }}" class="form-label fw-bold text-dark">
+                            1️⃣ Proposed Time Slot Option 1
+                        </label>
+                        {{ form.slot_1 }}
+                        <small class="text-muted d-block mt-1">Default: Earliest available time slot (+2 Hours)</small>
+                        {% if form.slot_1.errors %}
+                            <div class="text-danger small mt-1">{{ form.slot_1.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.slot_2.id_for_label }}" class="form-label fw-bold text-dark">
+                            2️⃣ Proposed Time Slot Option 2
+                        </label>
+                        {{ form.slot_2 }}
+                        <small class="text-muted d-block mt-1">Default: Tomorrow Morning (10:00 AM)</small>
+                        {% if form.slot_2.errors %}
+                            <div class="text-danger small mt-1">{{ form.slot_2.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.slot_3.id_for_label }}" class="form-label fw-bold text-dark">
+                            3️⃣ Proposed Time Slot Option 3
+                        </label>
+                        {{ form.slot_3 }}
+                        <small class="text-muted d-block mt-1">Default: Tomorrow Afternoon (3:00 PM)</small>
+                        {% if form.slot_3.errors %}
+                            <div class="text-danger small mt-1">{{ form.slot_3.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-emerald btn-lg fw-bold py-2">
+                            <i class="bi bi-send-check-fill me-2"></i>Send 3-Slot Interview Invite
+                        </button>
+                        <a href="{% url 'matching_app:recruiter_dashboard' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

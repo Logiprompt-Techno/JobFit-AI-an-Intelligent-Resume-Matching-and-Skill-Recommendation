@@ -1,0 +1,183 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}User Profile | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-lg-8">
+        <!-- Profile Header Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-4 flex-wrap">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" alt="{{ user.username }}" class="rounded-circle shadow-sm object-cover" style="width: 90px; height: 90px; object-fit: cover; border: 3px solid var(--emerald-500);">
+                    {% else %}
+                        <div class="company-logo-placeholder rounded-circle shadow-sm" style="width: 90px; height: 90px; font-size: 2.5rem; background: var(--navy-800); color: white;">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h3 class="fw-bold mb-0 text-dark">{{ user.username }}</h3>
+                            {% if profile.role == 'RECRUITER' %}
+                                <span class="badge bg-navy">Recruiter / Employer</span>
+                            {% else %}
+                                <span class="badge bg-success">Job Seeker</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted mb-1"><i class="bi bi-envelope me-1"></i>{{ user.email|default:"No email set" }}</p>
+                        <p class="text-muted small mb-0"><i class="bi bi-telephone me-1"></i>{{ profile.phone|default:"No phone number set" }}</p>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <a href="{% url 'matching_app:change_password' %}" class="btn btn-outline-navy btn-sm">
+                            <i class="bi bi-key me-1"></i>Change Password
+                        </a>
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                            <i class="bi bi-person-x me-1"></i>Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Edit Profile Details & Picture Card -->
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-person-bounding-box text-emerald me-2" style="color: var(--emerald-500);"></i>Update Account Profile</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="post" enctype="multipart/form-data" novalidate>
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold text-navy">Username</label>
+                                {{ form.username }}
+                                <small class="text-muted d-block mt-1">Edit your username here (spaces will convert to underscores).</small>
+                                {% if form.username.errors %}
+                                    <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.profile_picture.id_for_label }}" class="form-label fw-semibold text-navy">Profile Picture / Photo</label>
+                                {{ form.profile_picture }}
+                                <small class="text-muted d-block mt-1">Upload a professional photo (JPG, PNG, WEBP).</small>
+                                {% if form.profile_picture.errors %}
+                                    <div class="text-danger small mt-1">{{ form.profile_picture.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold text-navy">Email Address</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.phone.id_for_label }}" class="form-label fw-semibold text-navy">Phone Number</label>
+                                <div class="input-group">
+                                    <div style="max-width: 140px;">
+                                        {{ form.country_code }}
+                                    </div>
+                                    {{ form.phone }}
+                                </div>
+                                <small class="text-muted d-block mt-1">Must be exactly 10 digits (e.g. 9876543210)</small>
+                                {% if form.phone.errors %}
+                                    <div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            {% if profile.role == 'RECRUITER' %}
+                                <div class="mb-4">
+                                    <label for="{{ form.company_name.id_for_label }}" class="form-label fw-semibold text-navy">Associated Company Name</label>
+                                    {{ form.company_name }}
+                                    {% if form.company_name.errors %}
+                                        <div class="text-danger small mt-1">{{ form.company_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-emerald w-100 fw-bold py-2 mt-2">
+                                <i class="bi bi-check-circle me-1"></i>Save Profile Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Summary Card -->
+            <div class="col-md-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-info-circle me-2 text-primary"></i>Account Information</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item px-0">
+                                <strong class="d-block text-muted small text-uppercase">Username</strong>
+                                <span class="fw-semibold">{{ user.username }}</span>
+                            </li>
+                            <li class="list-group-item px-0">
+                                <strong class="d-block text-muted small text-uppercase">Account Type</strong>
+                                <span class="fw-semibold">{{ profile.get_role_display }}</span>
+                            </li>
+                            {% if profile.role == 'JOB_SEEKER' %}
+                                <li class="list-group-item px-0">
+                                    <strong class="d-block text-muted small text-uppercase">Uploaded Resume</strong>
+                                    {% if user_resume %}
+                                        <span class="text-success small fw-bold"><i class="bi bi-check-circle me-1"></i>Active Resume Profile</span>
+                                    {% else %}
+                                        <span class="text-muted small">No resume uploaded yet</span>
+                                    {% endif %}
+                                </li>
+                            {% elif profile.role == 'RECRUITER' %}
+                                <li class="list-group-item px-0">
+                                    <strong class="d-block text-muted small text-uppercase">Total Posted Jobs</strong>
+                                    <span class="badge bg-navy fs-6">{{ posted_jobs_count }} Jobs</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Account Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <i class="bi bi-person-x-fill display-1 text-danger d-block mb-3"></i>
+                <h4 class="fw-bold text-dark mb-2">Delete Your Account Permanently?</h4>
+                <p class="text-muted small mb-3">
+                    Are you sure you want to delete your account <strong>"{{ user.username }}"</strong>? This will permanently remove your uploaded resumes, job applications, internal messages, and profile information. This action cannot be undone.
+                </p>
+                <div class="alert alert-danger py-2 px-3 small fw-bold mb-0">
+                    <i class="bi bi-shield-x me-1"></i>All your data will be permanently wiped from JobFit AI.
+                </div>
+            </div>
+            <div class="modal-footer bg-light justify-content-center">
+                <button type="button" class="btn btn-outline-navy" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'matching_app:delete_account' %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger fw-bold">
+                        <i class="bi bi-trash me-1"></i>Yes, Permanently Delete Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

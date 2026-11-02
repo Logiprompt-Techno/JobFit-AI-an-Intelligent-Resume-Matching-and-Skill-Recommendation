@@ -1,0 +1,341 @@
+{% extends "matching_app/base.html" %}
+{% load static custom_filters %}
+
+{% block title %}Recruiter Dashboard | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-building-gear text-emerald me-2" style="color: var(--emerald-500);"></i>Employer Recruiter Dashboard
+        </h2>
+        <p class="text-muted mb-0">Manage job postings, review top-matching candidate resumes, conduct AI screening interviews, and update ATS application statuses.</p>
+    </div>
+    {% if not user.is_staff and not user.is_superuser %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'matching_app:company_create' %}" class="btn btn-navy">
+                <i class="bi bi-building-add me-1"></i>Add Company Profile
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Employer Stat Banner -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card shadow-sm border-0">
+            <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
+            <div>
+                <h3 class="fw-extrabold mb-0 text-dark">{{ total_posted_jobs }}</h3>
+                <span class="text-muted small">{% if user.is_staff or user.is_superuser %}Posted Jobs{% else %}My Posted Jobs{% endif %}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card shadow-sm border-0">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <div>
+                <h3 class="fw-extrabold mb-0 text-dark">{{ total_applicants }}</h3>
+                <span class="text-muted small">Total Applicants</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card shadow-sm border-0">
+            <div class="stat-icon"><i class="bi bi-award"></i></div>
+            <div>
+                <h3 class="fw-extrabold mb-0 text-dark">{{ top_matches.count }}</h3>
+                <span class="text-muted small">Top Match Evaluations</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clean Organised Nav Tabs -->
+<ul class="nav nav-pills custom-nav-pills mb-4 bg-white p-2 rounded shadow-sm border" id="recruiterTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold px-4 py-2" id="ats-tab" data-bs-toggle="tab" data-bs-target="#ats-panel" type="button" role="tab" aria-controls="ats-panel" aria-selected="true">
+            <i class="bi bi-list-check me-2"></i>ATS Applicant Tracking ({{ applications.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold px-4 py-2" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard-panel" type="button" role="tab" aria-controls="leaderboard-panel" aria-selected="false">
+            <i class="bi bi-trophy me-2 text-warning"></i>Top Candidate Matches ({{ top_matches.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold px-4 py-2" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs-panel" type="button" role="tab" aria-controls="jobs-panel" aria-selected="false">
+            <i class="bi bi-briefcase me-2 text-success"></i>{% if user.is_staff or user.is_superuser %}Posted Jobs{% else %}My Posted Jobs{% endif %} ({{ total_posted_jobs }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="recruiterTabsContent">
+    <!-- TAB 1: ATS Applicant Tracking -->
+    <div class="tab-pane fade show active" id="ats-panel" role="tabpanel" aria-labelledby="ats-tab">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-person-lines-fill me-2 text-primary"></i>ATS Applicant Status Tracking</h5>
+                <span class="badge bg-navy">{{ applications.count }} Applicant Submissions</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                 <th class="ps-4">Applicant</th>
+                                 <th>Job Title</th>
+                                 <th>Resume File</th>
+                                 <th>Status</th>
+                                 <th>AI Screening Interview</th>
+                                 {% if not user.is_staff and not user.is_superuser %}
+                                     <th class="text-end pe-4">Update Status &amp; Contact</th>
+                                 {% endif %}
+                             </tr>
+                         </thead>
+                         <tbody>
+                             {% for app in applications %}
+                                 <tr>
+                                     <td class="ps-4 fw-semibold">
+                                         <a href="{% url 'matching_app:resume_detail' app.resume.pk %}" class="text-decoration-none text-dark">
+                                             {{ app.resume.candidate_name|default:"Candidate" }}
+                                         </a>
+                                     </td>
+                                     <td>{{ app.job.job_title }}</td>
+                                     <td>
+                                         <div class="btn-group btn-group-sm">
+                                             <a href="{% url 'matching_app:resume_detail' app.resume.pk %}" class="btn btn-outline-navy btn-sm" title="View Resume">
+                                                 <i class="bi bi-file-earmark-person me-1"></i>View
+                                             </a>
+                                             {% if app.resume.uploaded_resume %}
+                                                 <a href="{{ app.resume.uploaded_resume.url }}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Download Resume File">
+                                                     <i class="bi bi-download"></i>
+                                                 </a>
+                                             {% endif %}
+                                         </div>
+                                     </td>
+                                     <td>
+                                         {% if app.status == 'Shortlisted' %}
+                                             <span class="badge bg-success">Shortlisted</span>
+                                         {% elif app.status == 'Under Review' %}
+                                             <span class="badge bg-warning text-dark">Under Review</span>
+                                         {% elif app.status == 'Rejected' %}
+                                             <span class="badge bg-danger">Rejected</span>
+                                         {% else %}
+                                             <span class="badge bg-info text-dark">Applied</span>
+                                         {% endif %}
+                                     </td>
+                                     <td>
+                                         {% with session=interview_sessions_map|get_item:app.pk %}
+                                             {% if session %}
+                                                  {% if session.reattempt_status == 'Requested' %}
+                                                      <div class="d-flex align-items-center gap-1">
+                                                          <a href="{% url 'matching_app:interview_transcript' session.id %}" class="btn btn-warning btn-sm fw-bold me-1" title="View Reason & Transcript">
+                                                              <i class="bi bi-arrow-repeat me-1"></i>Re-Attempt Requested
+                                                          </a>
+                                                          <form action="{% url 'matching_app:decide_interview_reattempt' session.id %}" method="post" class="d-inline">
+                                                              {% csrf_token %}
+                                                              <input type="hidden" name="decision" value="approve">
+                                                              <button type="submit" class="btn btn-success btn-sm" title="Approve & Reset Session" onclick="return confirm('Approve re-attempt request and reset session?');">
+                                                                  <i class="bi bi-check-circle"></i>
+                                                              </button>
+                                                          </form>
+                                                          <form action="{% url 'matching_app:decide_interview_reattempt' session.id %}" method="post" class="d-inline">
+                                                              {% csrf_token %}
+                                                              <input type="hidden" name="decision" value="decline">
+                                                              <button type="submit" class="btn btn-outline-danger btn-sm" title="Decline Request">
+                                                                  <i class="bi bi-x-circle"></i>
+                                                              </button>
+                                                          </form>
+                                                      </div>
+                                                   {% elif session.status == 'Completed' or session.status == 'Terminated (Tab Switch Violation)' %}
+                                                      <a href="{% url 'matching_app:interview_transcript' session.id %}" class="btn btn-outline-info btn-sm">
+                                                          <i class="bi bi-file-earmark-code me-1"></i>Transcript ({{ session.ai_evaluation_score|floatformat:1 }}%)
+                                                      </a>
+                                                   {% elif session.chosen_slot %}
+                                                      <div class="d-flex align-items-center gap-1">
+                                                          <span class="badge bg-success p-2 fw-semibold">
+                                                              <i class="bi bi-calendar-check me-1"></i>Confirmed: {{ session.chosen_slot|date:"M d - h:i A" }}
+                                                          </span>
+                                                      </div>
+                                                   {% elif session.slot_1 %}
+                                                      <span class="badge bg-warning text-dark p-2">
+                                                          <i class="bi bi-clock-history me-1"></i>Pending Candidate Choice
+                                                      </span>
+                                                   {% else %}
+                                                      <a href="{% url 'matching_app:interview_transcript' session.id %}" class="btn btn-outline-info btn-sm">
+                                                          <i class="bi bi-file-earmark-code me-1"></i>Transcript ({{ session.ai_evaluation_score|floatformat:1 }}%)
+                                                      </a>
+                                                   {% endif %}
+                                             {% else %}
+                                                  {% if user.is_staff or user.is_superuser %}
+                                                      <span class="badge bg-light text-muted border"><i class="bi bi-clock me-1"></i>Not Invited</span>
+                                                  {% else %}
+                                                      <a href="{% url 'matching_app:invite_to_interview' app.pk %}" class="btn btn-outline-warning btn-sm" title="Send AI Interview Invite">
+                                                          <i class="bi bi-robot me-1"></i>Invite to AI Interview
+                                                      </a>
+                                                  {% endif %}
+                                              {% endif %}
+                                          {% endwith %}
+                                     </td>
+                                     {% if not user.is_staff and not user.is_superuser %}
+                                         <td class="text-end pe-4">
+                                              <div class="d-inline-flex gap-2 align-items-center">
+                                                  <form action="{% url 'matching_app:update_application_status' app.pk %}" method="post" class="d-inline-flex gap-1">
+                                                      {% csrf_token %}
+                                                      <select name="status" class="form-select form-select-sm" style="width: 125px;">
+                                                          <option value="Applied" {% if app.status == 'Applied' %}selected{% endif %}>Applied</option>
+                                                          <option value="Under Review" {% if app.status == 'Under Review' %}selected{% endif %}>Under Review</option>
+                                                          <option value="Shortlisted" {% if app.status == 'Shortlisted' %}selected{% endif %}>Shortlisted</option>
+                                                          <option value="Rejected" {% if app.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                                                      </select>
+                                                      <button type="submit" class="btn btn-emerald btn-sm">Save</button>
+                                                  </form>
+                                                  {% if app.resume.user %}
+                                                      <a href="{% url 'matching_app:send_message' app.resume.user.pk %}?job_id={{ app.job.pk }}" class="btn btn-outline-primary btn-sm" title="Send Message">
+                                                          <i class="bi bi-chat-dots me-1"></i>Message
+                                                      </a>
+                                                  {% endif %}
+                                              </div>
+                                         </td>
+                                     {% endif %}
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="{% if not user.is_staff and not user.is_superuser %}6{% else %}5{% endif %}" class="text-center py-4 text-muted">No applicant submissions yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: Top Candidate Matches -->
+    <div class="tab-pane fade" id="leaderboard-panel" role="tabpanel" aria-labelledby="leaderboard-tab">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-navy text-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-trophy text-emerald me-2" style="color: var(--emerald-500);"></i>Top Matching Candidates Leaderboard</h5>
+                <span class="badge badge-emerald">Sorted by Match %</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Rank</th>
+                                <th>Candidate Name</th>
+                                <th>Job Opening</th>
+                                <th>Match Percentage</th>
+                                <th>Extracted Skills</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for match in top_matches %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-muted">#{{ forloop.counter }}</td>
+                                    <td class="fw-semibold">
+                                        <a href="{% url 'matching_app:resume_detail' match.resume.pk %}" class="text-decoration-none text-dark">
+                                            {{ match.resume.candidate_name|default:"Candidate #"|add:match.resume.pk }}
+                                        </a>
+                                    </td>
+                                    <td>{{ match.job.job_title }}</td>
+                                    <td>
+                                        <span class="badge {% if match.match_percentage >= 75 %}bg-success{% elif match.match_percentage >= 50 %}bg-info text-dark{% else %}bg-secondary{% endif %} fs-6">
+                                            {{ match.match_percentage }}% Match
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ match.resume.extracted_skills|truncatewords:6|default:"N/A" }}</small>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'matching_app:resume_detail' match.resume.pk %}" class="btn btn-outline-navy" title="View Full Resume Analysis">
+                                                <i class="bi bi-eye me-1"></i>View Resume
+                                            </a>
+                                            {% if match.resume.uploaded_resume %}
+                                                <a href="{{ match.resume.uploaded_resume.url }}" target="_blank" class="btn btn-outline-secondary" title="Download Document File">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            {% endif %}
+                                             {% if match.resume.user and not user.is_staff and not user.is_superuser %}
+                                                 <a href="{% url 'matching_app:send_message' match.resume.user.pk %}?job_id={{ match.job.pk }}" class="btn btn-outline-emerald" title="Send Message">
+                                                     <i class="bi bi-chat-dots"></i>
+                                                 </a>
+                                             {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="6" class="text-center py-4 text-muted">No candidate evaluations yet. Run job matching to see leaderboard!</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: My Posted Jobs Management -->
+    <div class="tab-pane fade" id="jobs-panel" role="tabpanel" aria-labelledby="jobs-tab">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-briefcase me-2 text-success"></i>{% if user.is_staff or user.is_superuser %}Posted Jobs Management{% else %}My Posted Jobs Management{% endif %}</h5>
+                
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Job Title</th>
+                                <th>Company</th>
+                                <th>Category</th>
+                                <th>Location</th>
+                                <th>Vacancies</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in posted_jobs %}
+                                <tr>
+                                    <td class="ps-4 fw-semibold">
+                                        <a href="{% url 'matching_app:job_detail' job.pk %}" class="text-decoration-none text-dark">
+                                            {{ job.job_title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ job.company_name }}</td>
+                                    <td><span class="badge badge-sky">{{ job.category }}</span></td>
+                                    <td><small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ job.location }}</small></td>
+                                    <td><span class="badge bg-light text-dark border">{{ job.vacancies }} Position{{ job.vacancies|pluralize }}</span></td>
+                                    <td class="text-end pe-4">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{% url 'matching_app:job_detail' job.pk %}" class="btn btn-outline-navy btn-sm" title="View Job Details">
+                                                <i class="bi bi-eye me-1"></i>View Job
+                                            </a>
+                                            {% if user.is_staff or user.is_superuser %}
+                                                <form action="{% url 'matching_app:job_delete' job.pk %}" method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this job posting for fraud or terms violation?');" title="Delete Fraudulent Job">
+                                                        <i class="bi bi-trash me-1"></i>Delete (Fraud)
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <a href="{% url 'matching_app:job_edit' job.pk %}" class="btn btn-outline-secondary btn-sm" title="Edit Job Posting">
+                                                    <i class="bi bi-pencil me-1"></i>Edit Job
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="6" class="text-center py-4 text-muted">No jobs posted yet. Click "Post New Job" above to start hiring!</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

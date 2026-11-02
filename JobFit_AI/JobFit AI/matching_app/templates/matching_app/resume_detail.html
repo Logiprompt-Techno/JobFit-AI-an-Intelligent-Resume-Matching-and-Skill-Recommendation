@@ -1,0 +1,152 @@
+{% extends "matching_app/base.html" %}
+{% load static custom_filters %}
+
+{% block title %}Candidate Resume - {{ resume.candidate_name|default:"Details" }} | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <a href="{% if is_recruiter %}{% url 'matching_app:recruiter_dashboard' %}{% else %}{% url 'matching_app:jobseeker_dashboard' %}{% endif %}" class="btn btn-outline-navy btn-sm mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </a>
+        <h2 class="fw-bold mb-0">
+            <i class="bi bi-person-badge text-cyan-600 me-2" style="color: var(--cyan-600);"></i>
+            {% if resume.candidate_name %}{{ resume.candidate_name }}{% else %}Candidate Details{% endif %}
+        </h2>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'matching_app:match_results' resume.pk %}" class="btn btn-cyan">
+            <i class="bi bi-lightning-charge me-1"></i>Run Job Match
+        </a>
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="bi bi-trash me-1"></i>Delete Resume
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left column: Candidate Info & File Info -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title fw-bold mb-0"><i class="bi bi-info-circle text-navy me-2"></i>Contact &amp; File Info</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">Email</strong>
+                        <span class="fw-medium">{{ resume.email|default:"Not specified" }}</span>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">Phone</strong>
+                        <span class="fw-medium">{{ resume.phone|default:"Not specified" }}</span>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">File Name</strong>
+                        <span class="fw-medium text-break">{{ resume.uploaded_resume.name }}</span>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">File Size</strong>
+                        <span class="fw-medium">{{ file_size_display }}</span>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">Uploaded At</strong>
+                        <span class="fw-medium">{{ resume.uploaded_at|date:"F d, Y - H:i" }}</span>
+                    </li>
+                </ul>
+                <div class="mt-4">
+                    <a href="{{ resume.uploaded_resume.url }}" class="btn btn-outline-primary btn-sm w-100" target="_blank">
+                        <i class="bi bi-download me-1"></i>Download Resume File
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column: Extracted Details -->
+    <div class="col-md-8">
+        <!-- Extracted Skills -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title fw-bold mb-0"><i class="bi bi-tools text-navy me-2"></i>Extracted Skills</h5>
+            </div>
+            <div class="card-body">
+                {% if skills_list %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for skill in skills_list %}
+                            <span class="badge badge-cyan fs-6 px-3 py-2 fw-medium">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No specific skills detected automatically from this document.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Experience & Education -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title fw-bold mb-0"><i class="bi bi-journal-text text-navy me-2"></i>Parsed Summary</h5>
+            </div>
+            <div class="card-body p-4">
+                <h6 class="fw-bold text-navy mb-2"><i class="bi bi-briefcase me-2 text-emerald" style="color: var(--emerald-500);"></i>Work Experience</h6>
+                <div class="bg-light p-3 rounded border mb-4">
+                    {% if resume.experience %}
+                        {{ resume.experience|format_parsed_summary }}
+                    {% else %}
+                        <p class="text-muted mb-0"><i class="bi bi-info-circle me-1"></i>No explicit experience section parsed from document.</p>
+                    {% endif %}
+                </div>
+
+                <h6 class="fw-bold text-navy mb-2"><i class="bi bi-mortarboard me-2 text-emerald" style="color: var(--emerald-500);"></i>Education</h6>
+                <div class="bg-light p-3 rounded border mb-0">
+                    {% if resume.education %}
+                        {{ resume.education|format_parsed_summary }}
+                    {% else %}
+                        <p class="text-muted mb-0"><i class="bi bi-info-circle me-1"></i>No explicit education section parsed from document.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Raw Text Preview accordion -->
+        <div class="accordion shadow-sm mb-4" id="rawTextAccordion">
+            <div class="accordion-item border-0 rounded overflow-hidden">
+                <h2 class="accordion-header" id="headingRawText">
+                    <button class="accordion-button collapsed bg-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRawText" aria-expanded="false" aria-controls="collapseRawText">
+                        <i class="bi bi-file-text text-secondary me-2"></i>View Extracted Raw Text
+                    </button>
+                </h2>
+                <div id="collapseRawText" class="accordion-collapse collapse" aria-labelledby="headingRawText" data-bs-parent="#rawTextAccordion">
+                    <div class="accordion-body bg-dark">
+                        <pre class="mb-0 small text-wrap" style="max-height: 400px; overflow-y: auto;">{{ resume.extracted_text }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="deleteModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                Are you sure you want to delete the resume for <strong>{{ resume.candidate_name|default:"this candidate" }}</strong>? 
+                This action cannot be undone.
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'matching_app:resume_delete' resume.pk %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Delete Resume</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

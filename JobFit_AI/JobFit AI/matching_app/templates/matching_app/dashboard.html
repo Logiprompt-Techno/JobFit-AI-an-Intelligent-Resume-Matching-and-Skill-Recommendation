@@ -1,0 +1,329 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Master Admin Control Panel | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-shield-lock-fill text-warning me-2"></i>Master Admin Control Panel
+        </h2>
+        <p class="text-muted mb-0">Overview of platform metrics, safety reports, recruiter approvals, active jobs, and message oversight.</p>
+    </div>
+    {% if user.is_superuser or user.is_staff %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'matching_app:recruiter_dashboard' %}" class="btn btn-emerald shadow-sm fw-semibold">
+                <i class="bi bi-list-check me-1"></i>ATS &amp; Candidate Matches
+            </a>
+            <a href="/admin/" target="_blank" class="btn btn-outline-navy shadow-sm fw-semibold">
+                <i class="bi bi-sliders me-1"></i>Django Admin Site <i class="bi bi-box-arrow-up-right ms-1"></i>
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Flagged Safety & Abuse Reports Alert Panel -->
+{% if pending_reports %}
+<div class="card shadow-sm border-0 mb-4 border-start border-4 border-danger">
+    <div class="card-header bg-danger text-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 text-white">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Flagged Safety &amp; Misconduct Reports ({{ pending_reports.count }})
+        </h5>
+        <span class="badge bg-white text-danger fw-bold fs-6 px-3 py-2"><i class="bi bi-shield-exclamation me-1"></i>Urgent Moderation</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Reporter</th>
+                        <th>Reported User</th>
+                        <th>Violation Type</th>
+                        <th>Explanation Details</th>
+                        <th>Date Reported</th>
+                        <th class="text-end pe-4">Take Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in pending_reports %}
+                        <tr>
+                            <td class="ps-4 fw-semibold text-dark">{{ r.reporter.username }}</td>
+                            <td><span class="badge bg-danger fs-6">{{ r.reported_user.username }}</span></td>
+                            <td><span class="badge bg-dark">{{ r.get_reason_display }}</span></td>
+                            <td><small class="text-muted">{{ r.description|truncatewords:12 }}</small></td>
+                            <td><small class="text-muted">{{ r.created_at|date:"M d, Y H:i" }}</small></td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group btn-group-sm">
+                                    <form action="{% url 'matching_app:resolve_user_report' r.pk %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="ban">
+                                        <button type="submit" class="btn btn-danger btn-sm fw-bold me-1" onclick="return confirm('Ban and deactivate account for {{ r.reported_user.username }}?');">
+                                            <i class="bi bi-person-x-fill me-1"></i>Ban Account
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'matching_app:resolve_user_report' r.pk %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="resolve">
+                                        <button type="submit" class="btn btn-success btn-sm me-1" onclick="return confirm('Mark report as resolved?');">
+                                            <i class="bi bi-check-circle me-1"></i>Resolve
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'matching_app:resolve_user_report' r.pk %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="dismiss">
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                            Dismiss
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Pending Recruiter Approvals Alert Panel -->
+<div class="card shadow-sm border-0 mb-5 border-start border-4 {% if pending_recruiters %}border-warning{% else %}border-success{% endif %}">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-person-check-fill text-warning me-2"></i>Pending Recruiter &amp; Company Approvals ({{ pending_recruiters.count }})
+        </h5>
+        {% if pending_recruiters %}
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-exclamation-circle me-1"></i>Action Required</span>
+        {% else %}
+            <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-circle me-1"></i>All Registrations Verified</span>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        {% if pending_recruiters %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Applicant Username</th>
+                            <th>Work Email</th>
+                            <th>Company Name</th>
+                            <th>Registered Date</th>
+                            <th class="text-end pe-4">Approve Access</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for profile in pending_recruiters %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">{{ profile.user.username }}</td>
+                                <td>{{ profile.user.email|default:"N/A" }}</td>
+                                <td><span class="badge bg-navy fs-6">{{ profile.company_name|default:"Independent Recruiter" }}</span></td>
+                                <td><small class="text-muted">{{ profile.user.date_joined|date:"M d, Y H:i" }}</small></td>
+                                <td class="text-end pe-4">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="{% url 'matching_app:approve_recruiter' profile.pk %}" class="btn btn-success btn-sm fw-bold" onclick="return confirm('Approve this recruiter account for job posting and candidate access?');">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Approve Recruiter Access
+                                        </a>
+                                        <a href="{% url 'matching_app:decline_recruiter' profile.pk %}" class="btn btn-outline-danger btn-sm fw-bold" onclick="return confirm('Decline and remove this recruiter registration request?');">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Decline / Reject
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-shield-check text-success display-4 d-block mb-2"></i>
+                <p class="mb-0">No pending recruiter registrations awaiting approval.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Master Platform Statistics Cards Grid -->
+<div class="row g-4 mb-5">
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card shadow-sm border-0">
+            <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
+            <div>
+                <h3 class="fw-extrabold mb-0 text-dark">{{ total_jobs }}</h3>
+                <span class="text-muted small">Total Active Jobs</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card shadow-sm border-0">
+            <div class="stat-icon"><i class="bi bi-building"></i></div>
+            <div>
+                <h3 class="fw-extrabold mb-0 text-dark">{{ total_companies }}</h3>
+                <span class="text-muted small">Registered Companies</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card shadow-sm border-0">
+            <div class="stat-icon"><i class="bi bi-file-earmark-person"></i></div>
+            <div>
+                <h3 class="fw-extrabold mb-0 text-dark">{{ total_resumes }}</h3>
+                <span class="text-muted small">Uploaded Resumes</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card shadow-sm border-0">
+            <div class="stat-icon"><i class="bi bi-cpu"></i></div>
+            <div>
+                <h3 class="fw-extrabold mb-0 text-dark">{{ total_matches }}</h3>
+                <span class="text-muted small">AI Job Evaluations</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Master Message Audit & Oversight Card -->
+<div class="card shadow-sm border-0 mb-5">
+    <div class="card-header bg-navy text-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0"><i class="bi bi-chat-square-text-fill text-emerald me-2" style="color: var(--emerald-500);"></i>Master Platform Message Audit Log</h5>
+        <div class="d-flex align-items-center gap-2">
+            <input type="text" id="auditSearchInput" class="form-control form-control-sm border-0 shadow-sm" placeholder="🔍 Search sender, recipient, or topic..." style="max-width: 280px;" onkeyup="filterAuditTable()">
+            <span class="badge bg-light text-dark">System Oversight</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="auditLogTable">
+                <thead class="bg-light sticky-top">
+                    <tr>
+                        <th class="ps-4">Sender</th>
+                        <th>Recipient</th>
+                        <th>Subject / Topic</th>
+                        <th>Date &amp; Time</th>
+                        <th class="text-end pe-4">Inspect Thread</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for msg in master_messages %}
+                        <tr>
+                            <td class="ps-4 fw-semibold text-dark search-target">{{ msg.sender.username }}</td>
+                            <td class="fw-semibold text-primary search-target">{{ msg.recipient.username }}</td>
+                            <td><span class="badge bg-light text-dark border search-target">{{ msg.subject|default:"Direct Message Thread" }}</span></td>
+                            <td><small class="text-muted">{{ msg.created_at|date:"M d, Y H:i" }}</small></td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'matching_app:conversation_detail' msg.recipient.pk %}?sender_id={{ msg.sender.pk }}" class="btn btn-outline-navy btn-sm">
+                                    <i class="bi bi-clock-history me-1"></i>View Timestamps
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No platform messages recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterAuditTable() {
+    var input = document.getElementById("auditSearchInput");
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll("#auditLogTable tbody tr");
+
+    rows.forEach(function(row) {
+        var text = row.innerText.toLowerCase();
+        if (text.indexOf(filter) > -1) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+</script>
+
+<div class="row g-4">
+    <!-- Recent Resume Uploads -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-file-earmark-text text-primary me-2"></i>Recent Candidate Resumes</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Candidate</th>
+                                <th>Email</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resume in recent_resumes %}
+                                <tr>
+                                    <td class="ps-4 fw-semibold">{{ resume.candidate_name|default:"Unnamed Candidate" }}</td>
+                                    <td><small class="text-muted">{{ resume.email|default:"N/A" }}</small></td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'matching_app:resume_detail' resume.pk %}" class="btn btn-outline-navy btn-sm">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3" class="text-center py-3 text-muted">No resumes uploaded yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Job Openings -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-briefcase text-success me-2"></i>Recent Posted Jobs</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Job Title</th>
+                                <th>Company</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in recent_jobs %}
+                                <tr>
+                                    <td class="ps-4 fw-semibold">{{ job.job_title }}</td>
+                                    <td>{{ job.company_name }}</td>
+                                    <td class="text-end pe-4">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{% url 'matching_app:job_detail' job.pk %}" class="btn btn-outline-navy btn-sm">
+                                                View Job
+                                            </a>
+                                            <form action="{% url 'matching_app:job_delete' job.pk %}" method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this job posting for fraud or terms violation?');" title="Delete Fraudulent Job">
+                                                    <i class="bi bi-trash me-1"></i>Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3" class="text-center py-3 text-muted">No jobs posted yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

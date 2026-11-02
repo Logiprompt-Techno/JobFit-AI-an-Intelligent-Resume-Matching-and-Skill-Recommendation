@@ -1,0 +1,147 @@
+{% extends "matching_app/base.html" %}
+{% load static custom_filters %}
+
+{% block title %}Match Results - {{ resume.candidate_name|default:"Candidate" }} | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <a href="{% url 'matching_app:resume_detail' resume.pk %}" class="btn btn-outline-navy btn-sm mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Back to Resume Profile
+        </a>
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-bar-chart-line text-emerald me-2" style="color: var(--emerald-500);"></i>AI Job Match Results &amp; Skill Analytics
+        </h2>
+        <p class="text-muted mb-0">
+            Hybrid evaluation (60% Skill Overlap + 40% Sentence-BERT Semantic Vector Embeddings) for candidate <strong>{{ resume.candidate_name|default:"Candidate" }}</strong>.
+        </p>
+    </div>
+    <div>
+        <a href="{% url 'matching_app:download_match_pdf' resume.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF Report
+        </a>
+        <a href="{% url 'matching_app:recommendations' resume.pk %}" class="btn btn-emerald ms-2">
+            <i class="bi bi-lightbulb me-1"></i>View Skill Recommendations
+        </a>
+    </div>
+</div>
+
+{% if ranked_results %}
+    <div class="row g-4 mb-5">
+        {% for result in ranked_results %}
+            <div class="col-12">
+                <div class="card shadow-sm border-0 card-hover-lift">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center g-4">
+                            <!-- Match Percentage Circle / Badge -->
+                            <div class="col-md-3 text-center border-end-md">
+                                <div class="position-relative d-inline-block">
+                                    <div class="display-4 fw-extrabold text-navy mb-0">{{ result.match_percentage }}%</div>
+                                    <span class="badge {% if result.match_percentage >= 70 %}bg-success{% elif result.match_percentage >= 50 %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-3 py-2 fs-6">
+                                        {% if result.match_percentage >= 70 %}
+                                            <i class="bi bi-star-fill me-1"></i>Strong Match
+                                        {% elif result.match_percentage >= 50 %}
+                                            <i class="bi bi-check-circle me-1"></i>Moderate Match
+                                        {% else %}
+                                            <i class="bi bi-dash-circle me-1"></i>Low Match
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="mt-2 text-muted small">
+                                    Score: <strong>{{ result.match_percentage }}</strong> / 100
+                                </div>
+                            </div>
+
+                            <!-- Job Info & Skill Breakdown -->
+                            <div class="col-md-9">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                    <div>
+                                        <h4 class="fw-bold mb-1">
+                                            <a href="{% url 'matching_app:job_detail' result.job.pk %}" class="text-decoration-none text-dark">
+                                                {{ result.job.job_title }}
+                                            </a>
+                                        </h4>
+                                        <div class="text-muted small">
+                                            <span class="me-3"><i class="bi bi-building me-1"></i>{{ result.job.company_name }}</span>
+                                            <span class="me-3"><i class="bi bi-geo-alt me-1"></i>{{ result.job.location }}</span>
+                                            <span><i class="bi bi-clock me-1"></i>{{ result.job.job_type }}</span>
+                                        </div>
+                                    </div>
+                                    <a href="{% url 'matching_app:job_detail' result.job.pk %}" class="btn btn-outline-navy btn-sm">
+                                        View Job Details
+                                    </a>
+                                </div>
+
+                                <p class="text-muted small mb-3">
+                                    {{ result.job.job_description|truncatewords:20 }}
+                                </p>
+
+                                <div class="row g-3 bg-light p-3 rounded border">
+                                    <!-- Matching Skills -->
+                                    <div class="col-md-4">
+                                        <strong class="small text-uppercase text-success d-block mb-1">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Matching Skills:
+                                        </strong>
+                                        {% if result.job.required_skills %}
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for skill in result.job.required_skills|split_skills %}
+                                                    {% if skill in resume_skills_set %}
+                                                        <span class="badge bg-success text-white">{{ skill }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted small">N/A</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Missing Skills -->
+                                    <div class="col-md-4">
+                                        <strong class="small text-uppercase text-danger d-block mb-1">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Missing Skills:
+                                        </strong>
+                                        {% if result.missing_skills %}
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for skill in result.missing_skills|split_skills %}
+                                                    <span class="badge bg-danger text-white">{{ skill }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <span class="badge bg-success-subtle text-success">100% Skill Overlap!</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Recommended Skills / Certifications -->
+                                    <div class="col-md-4">
+                                        <strong class="small text-uppercase text-warning d-block mb-1" style="color: #d97706 !important;">
+                                            <i class="bi bi-lightbulb-fill me-1"></i>Recommended Learning:
+                                        </strong>
+                                        {% if result.recommended_skills %}
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for rec in result.recommended_skills|split_skills|slice:":2" %}
+                                                    <span class="badge bg-warning text-dark">{{ rec }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted small">No certification gap.</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 bg-white rounded shadow-sm">
+        <i class="bi bi-bar-chart-line display-1 text-muted"></i>
+        <h4 class="mt-3">No Job Match Results Found</h4>
+        <p class="text-muted">Ensure job postings are available in the system before running candidate matching.</p>
+        <a href="{% url 'matching_app:job_create' %}" class="btn btn-emerald mt-2">
+            <i class="bi bi-plus-circle me-1"></i>Add a Job Posting
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

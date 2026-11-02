@@ -1,0 +1,261 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Interview Transcript - {{ session.candidate.username }} | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <a href="{% if is_recruiter %}{% url 'matching_app:recruiter_dashboard' %}{% else %}{% url 'matching_app:jobseeker_dashboard' %}{% endif %}" class="btn btn-outline-navy btn-sm mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </a>
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-file-earmark-code text-emerald me-2" style="color: var(--emerald-500);"></i>AI Interview Evaluation Transcript
+        </h2>
+        <p class="text-muted mb-0">Review candidate responses, proctoring security logs, re-attempt requests, and AI evaluation score.</p>
+    </div>
+</div>
+
+{% if session.reattempt_status == 'Requested' and is_recruiter %}
+    <!-- Candidate Re-Attempt Request Alert Banner for Recruiter -->
+    <div class="alert alert-warning border-warning shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h5 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>Candidate Requested Interview Re-Attempt
+                </h5>
+                <p class="text-muted mb-2">
+                    Candidate <strong>{{ session.candidate.username }}</strong> requested permission to retake this screening interview.
+                </p>
+                <div class="bg-white p-3 rounded border text-dark">
+                    <strong class="d-block text-navy small mb-1"><i class="bi bi-chat-left-text me-1"></i>Candidate's Explanatory Reason Note:</strong>
+                    <em>"{{ session.reattempt_reason }}"</em>
+                </div>
+            </div>
+            <div class="d-flex gap-2 align-self-center">
+                <form action="{% url 'matching_app:decide_interview_reattempt' session.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="approve">
+                    <button type="submit" class="btn btn-success btn-lg px-4" onclick="return confirm('Approve re-attempt? This will reset the interview session and clear previous answers so candidate can retake.');">
+                        <i class="bi bi-check-circle me-1"></i>Approve Re-Attempt &amp; Reset
+                    </button>
+                </form>
+                <form action="{% url 'matching_app:decide_interview_reattempt' session.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="decline">
+                    <button type="submit" class="btn btn-outline-danger btn-lg px-3">
+                        <i class="bi bi-x-circle me-1"></i>Decline
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Candidate Re-Attempt Panel on Transcript Page (When Candidate Views Page) -->
+{% if not is_recruiter and session.status == 'Completed' or not is_recruiter and session.status == 'Terminated (Tab Switch Violation)' %}
+    <div class="card shadow-sm border-warning mb-4 bg-light">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-arrow-counterclockwise text-emerald me-2"></i>Need to Re-Attempt this Interview?</h5>
+            
+            {% if session.reattempt_status == 'Requested' %}
+                <div class="alert alert-warning py-3 px-3 mb-0">
+                    <strong class="d-block text-dark"><i class="bi bi-clock-history me-1"></i>Re-Attempt Request Pending Review</strong>
+                    <small class="text-muted">Your re-attempt request note has been sent to the recruiter. You will be notified once they approve or decline.</small>
+                    <div class="bg-white p-2 rounded mt-2 text-dark small border">
+                        <em>"{{ session.reattempt_reason }}"</em>
+                    </div>
+                </div>
+            {% elif session.reattempt_status == 'Approved' %}
+                <div class="alert alert-success py-3 px-3 mb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <strong class="d-block"><i class="bi bi-check-circle-fill me-1"></i>Re-Attempt Request Approved!</strong>
+                        <small>The recruiter approved your retake request. You can re-enter the interview room now.</small>
+                    </div>
+                    <a href="{% url 'matching_app:interview_room' session.id %}" class="btn btn-success btn-sm fw-bold">
+                        <i class="bi bi-play-circle me-1"></i>Enter Interview Room
+                    </a>
+                </div>
+            {% elif session.reattempt_status == 'Declined' %}
+                <div class="alert alert-secondary py-3 px-3 mb-0">
+                    <strong class="d-block text-dark"><i class="bi bi-info-circle me-1"></i>Re-Attempt Request Declined</strong>
+                    <small class="text-muted">The recruiter evaluated your submission and decided to proceed with your original results.</small>
+                </div>
+            {% else %}
+                <p class="text-muted small mb-3">
+                    If you experienced technical glitches, internet drops, or accidental tab switches, you can submit a re-attempt request to the employer with an explanatory note.
+                </p>
+                <button type="button" class="btn btn-emerald btn-md fw-bold" data-bs-toggle="modal" data-bs-target="#reattemptTranscriptModal">
+                    <i class="bi bi-chat-left-dots me-1"></i>Request Interview Re-Attempt
+                </button>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Candidate & Job Summary Card -->
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="badge bg-navy mb-1">{{ session.job.company_name }}</span>
+                        <h4 class="fw-bold text-dark mb-0">{{ session.job.job_title }}</h4>
+                    </div>
+                    <div>
+                        {% if session.status == 'Terminated (Tab Switch Violation)' %}
+                            <span class="badge bg-danger fs-6"><i class="bi bi-shield-x me-1"></i>Terminated (Tab Violation)</span>
+                        {% elif session.status == 'Completed' %}
+                            <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Completed</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark fs-6">{{ session.status }}</span>
+                        {% endif %}
+
+                        {% if session.reattempt_status == 'Requested' %}
+                            <span class="badge bg-warning text-dark fs-6 ms-1"><i class="bi bi-arrow-repeat me-1"></i>Re-Attempt Requested</span>
+                        {% elif session.reattempt_status == 'Approved' %}
+                            <span class="badge bg-success fs-6 ms-1"><i class="bi bi-check2-all me-1"></i>Re-Attempt Approved</span>
+                        {% elif session.reattempt_status == 'Declined' %}
+                            <span class="badge bg-secondary fs-6 ms-1">Re-Attempt Declined</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row g-3 py-2 border-top border-bottom my-2">
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Candidate Name:</small>
+                        <strong class="text-dark">{{ session.candidate.username }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Candidate Email:</small>
+                        <strong class="text-dark">{{ session.candidate.email|default:"N/A" }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Interview Date:</small>
+                        <strong class="text-dark">{{ session.created_at|date:"M d, Y H:i" }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Proctoring Log (Tab Switches):</small>
+                        {% if session.tab_switch_count > 0 %}
+                            <span class="badge bg-danger">{{ session.tab_switch_count }} Tab Switch Violation{{ session.tab_switch_count|pluralize }}</span>
+                        {% else %}
+                            <span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>Clean Session (0 Violations)</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold text-navy mb-1"><i class="bi bi-robot me-1"></i>AI Summary Feedback &amp; Recommendation:</h6>
+                        <p class="text-muted mb-0 small leading-relaxed">{{ session.ai_summary|default:"Evaluation pending response submission." }}</p>
+                    </div>
+                    {% if is_recruiter and session.reattempt_status != 'Requested' %}
+                        <form action="{% url 'matching_app:decide_interview_reattempt' session.id %}" method="post" class="mt-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="decision" value="approve">
+                            <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Reset this session and grant the candidate a fresh re-attempt?');">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset &amp; Grant Re-Attempt
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 bg-navy text-white">
+            <div class="card-body p-4 text-center d-flex flex-column justify-content-center align-items-center">
+                <small class="text-slate-300 text-uppercase fw-bold letter-spacing-1 mb-2" style="color: #cbd5e1;">Overall AI Response Score</small>
+                <div class="display-3 fw-extrabold text-emerald mb-2" style="color: var(--emerald-500);">
+                    {{ session.ai_evaluation_score|floatformat:1 }}%
+                </div>
+                <div class="progress w-100 mb-3" style="height: 10px;">
+                    <div class="progress-bar bg-emerald" role="progressbar" style="width: {{ session.ai_evaluation_score|floatformat:0 }}%;"></div>
+                </div>
+
+                {% if session.application and is_recruiter %}
+                    <div class="mt-3 w-100">
+                        <small class="text-slate-300 d-block mb-2">Update ATS Status:</small>
+                        <form action="{% url 'matching_app:update_application_status' session.application.pk %}" method="post" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="Shortlisted" {% if session.application.status == 'Shortlisted' %}selected{% endif %}>Shortlisted</option>
+                                <option value="Under Review" {% if session.application.status == 'Under Review' %}selected{% endif %}>Under Review</option>
+                                <option value="Rejected" {% if session.application.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                            </select>
+                            <button type="submit" class="btn btn-emerald btn-sm">Save</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Q&A Transcript -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-chat-left-text me-2 text-primary"></i>Questions &amp; Candidate Answers Transcript</h5>
+    </div>
+    <div class="card-body p-4">
+        {% for q in questions %}
+            <div class="mb-4 pb-4 border-bottom last-border-0">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-navy">Question {{ q.question_number }}</span>
+                    <span class="badge bg-info text-dark">Score: {{ q.score|floatformat:1 }}%</span>
+                </div>
+                <h6 class="fw-bold text-dark mb-2"><i class="bi bi-question-circle me-1 text-primary"></i>{{ q.question_text }}</h6>
+                
+                <div class="bg-light p-3 rounded-3 mb-2 border">
+                    <strong class="small text-muted d-block mb-1"><i class="bi bi-chat-right-quote me-1"></i>Candidate's Response:</strong>
+                    {% if q.candidate_answer %}
+                        <p class="mb-0 text-dark small leading-relaxed">{{ q.candidate_answer|linebreaksbr }}</p>
+                    {% else %}
+                        <span class="text-danger small italic"><i class="bi bi-x-circle me-1"></i>No answer provided.</span>
+                    {% endif %}
+                </div>
+
+                {% if q.ai_feedback %}
+                    <small class="text-emerald d-block" style="color: var(--emerald-600);">
+                        <i class="bi bi-cpu me-1"></i><strong>AI Evaluation Note:</strong> {{ q.ai_feedback }}
+                    </small>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="text-muted text-center py-4">No questions recorded for this session.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Candidate Re-Attempt Request Modal for Transcript Page -->
+{% if not is_recruiter %}
+<div class="modal fade" id="reattemptTranscriptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{% url 'matching_app:request_interview_reattempt' session.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-arrow-counterclockwise me-2 text-emerald"></i>Request Interview Re-Attempt</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        Please explain why you need to re-attempt this interview session (e.g. internet disconnect, hardware failure, accidental tab switch).
+                    </p>
+                    <div class="mb-3">
+                        <label for="reattempt-reason-transcript" class="form-label fw-bold small text-navy">Reason / Explanatory Note:</label>
+                        <textarea id="reattempt-reason-transcript" name="reason" class="form-control" rows="4" placeholder="Explain the technical issue or reason here..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-emerald fw-bold">Submit Re-Attempt Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

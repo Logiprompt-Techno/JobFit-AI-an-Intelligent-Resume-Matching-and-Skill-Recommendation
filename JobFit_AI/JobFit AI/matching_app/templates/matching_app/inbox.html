@@ -1,0 +1,157 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Messages Inbox | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-chat-left-text text-emerald me-2" style="color: var(--emerald-500);"></i>Messages Inbox
+        </h2>
+        <p class="text-muted mb-0">Communicate directly with recruiters and candidates regarding applications, announcements, or notices.</p>
+    </div>
+    {% if user.is_staff or user.is_superuser %}
+        <button type="button" class="btn btn-emerald fw-bold" data-bs-toggle="modal" data-bs-target="#adminComposeModal">
+            <i class="bi bi-send-plus-fill me-1"></i>Compose Direct Message
+        </button>
+    {% endif %}
+</div>
+
+{% if user.is_staff or user.is_superuser %}
+<!-- Admin Compose Message Modal Popup -->
+<div class="modal fade" id="adminComposeModal" tabindex="-1" aria-labelledby="adminComposeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-navy text-white py-3">
+                <h5 class="modal-title fw-bold" id="adminComposeModalLabel">
+                    <i class="bi bi-envelope-paper-fill text-emerald me-2"></i>Compose Direct Platform Message (Admin)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'matching_app:inbox' %}" novalidate>
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 shadow-sm mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>Select a recipient from the categorized Job Seekers or Recruiters lists below, OR enter a specific username directly.
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">👨‍💼 Select Job Seeker / Candidate</label>
+                            <select name="recipient_user_id" class="form-select">
+                                <option value="">-- Choose Candidate --</option>
+                                {% for u in jobseekers %}
+                                    <option value="{{ u.id }}">👨‍💼 {{ u.username }} ({{ u.email|default:"No email" }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">🏢 Select Recruiter / Employer</label>
+                            <select name="recipient_user_id" class="form-select">
+                                <option value="">-- Choose Recruiter --</option>
+                                {% for u in recruiters %}
+                                    <option value="{{ u.id }}">🏢 {{ u.username }} ({{ u.profile.company_name|default:"Independent Recruiter" }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">OR Enter Target Username Directly</label>
+                        <input type="text" name="target_username" class="form-control" placeholder="e.g. Revathi or datamind_recruiter">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Subject / Topic</label>
+                        <input type="text" name="subject" class="form-control" placeholder="Notice from Administrator" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Message Content</label>
+                        <textarea name="body" class="form-control" rows="5" placeholder="Write your message here..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-emerald fw-bold">
+                        <i class="bi bi-send-fill me-1"></i>Send Direct Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-navy text-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-inbox me-2"></i>Active Conversations</h5>
+                {% if unread_total > 0 %}
+                    <span class="badge bg-danger">{{ unread_total }} Unread Message{{ unread_total|pluralize }}</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for conv in conversations %}
+                        <div class="list-group-item p-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="company-logo-placeholder" style="width: 48px; height: 48px; font-size: 1.3rem; background: var(--navy-700); color: white;">
+                                        {{ conv.other_user.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <a href="{% url 'matching_app:conversation_detail' conv.other_user.id %}" class="text-decoration-none">
+                                                <h6 class="fw-bold mb-0 text-dark hover-text-primary">{{ conv.other_user.username }}</h6>
+                                            </a>
+                                            {% if conv.other_user.profile and conv.other_user.profile.role == 'RECRUITER' %}
+                                                <span class="badge bg-navy small">Recruiter</span>
+                                            {% else %}
+                                                <span class="badge bg-success small">Candidate</span>
+                                            {% endif %}
+                                            {% if conv.unread_count > 0 %}
+                                                <span class="badge bg-danger small">{{ conv.unread_count }} new</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-muted small mb-0 mt-1">
+                                            <strong>{{ conv.last_message.subject|default:"No Subject" }}:</strong> {{ conv.last_message.body|truncatewords:15 }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-end ms-auto">
+                                    <small class="text-muted d-block mb-2">{{ conv.last_message.created_at|date:"M d, H:i" }}</small>
+                                    <div class="d-flex align-items-center gap-2 justify-content-end">
+                                        <a href="{% url 'matching_app:conversation_detail' conv.other_user.id %}" class="btn btn-outline-navy btn-sm">
+                                            Open Chat <i class="bi bi-chevron-right ms-1"></i>
+                                        </a>
+                                        <form method="post" action="{% url 'matching_app:delete_conversation' conv.other_user.id %}" class="d-inline" onsubmit="return confirm('Delete conversation thread with {{ conv.other_user.username }}?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Conversation Thread">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-chat-dots display-1 text-muted"></i>
+                            <h4 class="mt-3 fw-bold">No Messages Yet</h4>
+                            <p class="text-muted">You have no active message conversations.</p>
+                            {% if user.is_staff or user.is_superuser %}
+                                <button type="button" class="btn btn-emerald fw-bold mt-2" data-bs-toggle="modal" data-bs-target="#adminComposeModal">
+                                    <i class="bi bi-send-plus-fill me-1"></i>Compose First Admin Message
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

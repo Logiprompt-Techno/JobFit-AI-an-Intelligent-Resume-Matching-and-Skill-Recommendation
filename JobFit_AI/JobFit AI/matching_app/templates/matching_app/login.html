@@ -1,0 +1,73 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Sign In | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-1">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-md border-0">
+            <div class="card-header bg-navy text-white text-center py-2 px-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-shield-lock text-emerald me-2" style="color: var(--emerald-500);"></i>Account Sign In
+                </h5>
+                <small class="text-slate-300" style="color: #cbd5e1; font-size: 0.8rem;">Sign in to access your dashboard and active application pipeline.</small>
+            </div>
+            <div class="card-body p-3">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-2">
+                        <label for="{{ form.username.id_for_label }}" class="form-label small fw-semibold mb-1">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 0.75rem;">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="{{ form.password.id_for_label }}" class="form-label small fw-semibold mb-0">Password</label>
+                            <a href="{% url 'matching_app:forgot_password' %}" class="small text-decoration-none text-emerald fw-semibold" style="font-size: 0.8rem;">Forgot Password?</a>
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <input type="password" name="password" id="id_password" class="form-control" placeholder="Enter password" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('id_password', this)">
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 0.75rem;">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="submit" class="btn btn-emerald">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light text-center py-2 border-top">
+                <small class="text-muted" style="font-size: 0.8rem;">Need an account? <a href="{% url 'matching_app:jobseeker_signup' %}" class="fw-bold text-decoration-none">Job Seeker Sign Up</a> | <a href="{% url 'matching_app:recruiter_signup' %}" class="fw-bold text-decoration-none">Recruiter Sign Up</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePasswordVisibility(inputId, btn) {
+    var input = document.getElementById(inputId);
+    var icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye-fill');
+        icon.classList.add('bi-eye-slash-fill');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash-fill');
+        icon.classList.add('bi-eye-fill');
+    }
+}
+</script>
+{% endblock %}

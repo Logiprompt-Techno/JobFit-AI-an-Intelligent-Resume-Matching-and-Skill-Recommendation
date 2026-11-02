@@ -1,0 +1,486 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}AI Screening Interview - {{ session.job.job_title }} | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-2">
+    <div class="col-lg-9 col-xl-8">
+
+        <!-- Header Card -->
+        <div class="card shadow-sm border-0 mb-3 bg-navy text-white">
+            <div class="card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-emerald mb-1">Proctored AI Screening Interview</span>
+                    <h4 class="fw-bold mb-0 text-white">{{ session.job.job_title }}</h4>
+                    <small class="text-slate-300" style="color: #cbd5e1;">Candidate: {{ session.candidate.username }} | {{ session.job.company_name }}</small>
+                </div>
+                <div class="text-end d-flex align-items-center gap-2">
+                    <div id="interview-timer-badge" class="badge bg-navy px-3 py-2 fs-6 text-emerald border border-emerald" style="border-color: var(--emerald-500) !important;">
+                        <i class="bi bi-clock-history me-1 text-emerald"></i>Time Remaining: <span id="timer-countdown">10:00</span>
+                    </div>
+                    <div id="proctor-badge" class="badge {% if session.tab_switch_count > 0 %}bg-danger text-white{% else %}bg-success{% endif %} px-3 py-2 fs-6">
+                        {% if session.tab_switch_count > 0 %}
+                            <i class="bi bi-shield-exclamation me-1"></i>Proctoring Warning ({{ session.tab_switch_count }}/3)
+                        {% else %}
+                            <i class="bi bi-shield-check me-1"></i>Proctoring Active (0/3 Warnings)
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if session.status == 'Completed' or session.status == 'Terminated (Tab Switch Violation)' %}
+            <!-- Closed Session Card -->
+            <div class="card shadow-sm border-0 text-center p-5">
+                <div class="card-body">
+                    {% if session.status == 'Terminated (Tab Switch Violation)' %}
+                        <i class="bi bi-exclamation-octagon-fill text-danger display-1 mb-3 d-block"></i>
+                        <h3 class="fw-bold text-danger">Interview Terminated &amp; Auto-Submitted</h3>
+                        <p class="text-muted leading-relaxed max-w-md mx-auto">
+                            This interview session was automatically submitted and terminated because tab switching or window departure occurred more than 3 times.
+                        </p>
+                        <div class="alert alert-danger d-inline-block px-4 mb-3">
+                            <i class="bi bi-shield-x me-1"></i>Violation Flag: Exceeded Maximum Permitted Tab Switches ({{ session.tab_switch_count }}/3 Violations)
+                        </div>
+                    {% else %}
+                        <i class="bi bi-check-circle-fill text-success display-1 mb-3 d-block"></i>
+                        <h3 class="fw-bold text-dark">Interview Completed!</h3>
+                        <p class="text-muted leading-relaxed">
+                            Thank you for completing your AI screening interview. Your responses have been submitted to the recruiter for evaluation.
+                        </p>
+                        <div class="alert alert-success d-inline-block px-4 mb-3">
+                            <i class="bi bi-award me-1"></i>AI Score Generated: <strong>{{ session.ai_evaluation_score }}%</strong>
+                        </div>
+                    {% endif %}
+
+                    <!-- Re-Attempt Request Panel -->
+                    <div class="border-top pt-4 mt-2 max-w-lg mx-auto text-start">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-arrow-counterclockwise text-emerald me-1"></i>Need to Re-Attempt this Interview?</h6>
+                        
+                        {% if session.reattempt_status == 'Requested' %}
+                            <div class="alert alert-warning py-3 px-3">
+                                <strong class="d-block text-dark"><i class="bi bi-clock-history me-1"></i>Re-Attempt Request Pending Review</strong>
+                                <small class="text-muted">Your re-attempt request note has been sent to the recruiter. You will be notified once they approve or decline.</small>
+                                <div class="bg-white p-2 rounded mt-2 text-dark small border">
+                                    <em>"{{ session.reattempt_reason }}"</em>
+                                </div>
+                            </div>
+                        {% elif session.reattempt_status == 'Approved' %}
+                            <div class="alert alert-success py-3 px-3">
+                                <strong class="d-block"><i class="bi bi-check-circle-fill me-1"></i>Re-Attempt Request Approved!</strong>
+                                <small>The recruiter approved your retake request. Please refresh or re-enter the interview room to begin.</small>
+                            </div>
+                        {% elif session.reattempt_status == 'Declined' %}
+                            <div class="alert alert-secondary py-3 px-3">
+                                <strong class="d-block text-dark"><i class="bi bi-info-circle me-1"></i>Re-Attempt Request Declined</strong>
+                                <small class="text-muted">The recruiter evaluated your initial submission and decided to proceed with your original results.</small>
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-3">
+                                If you experienced technical glitches, internet drops, or accidental tab switches, you can request a re-attempt from the employer with an explanatory note.
+                            </p>
+                            <button type="button" class="btn btn-outline-navy btn-sm" data-bs-toggle="modal" data-bs-target="#reattemptModal">
+                                <i class="bi bi-chat-left-dots me-1"></i>Request Interview Re-Attempt
+                            </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'matching_app:jobseeker_dashboard' %}" class="btn btn-emerald btn-lg">
+                            <i class="bi bi-house me-1"></i>Return to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Active Proctored Interview Chatbot -->
+            <div class="card shadow-sm border-0">
+                <!-- Progress Bar -->
+                <div class="card-header bg-white py-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="fw-bold text-navy" id="question-tracker">Question 1 of {{ total_questions }}</small>
+                        <small class="text-muted" id="progress-percent">0% Completed</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div id="interview-progress-bar" class="progress-bar bg-emerald" role="progressbar" style="width: 25%;"></div>
+                    </div>
+                </div>
+
+                <!-- Chatbot Body -->
+                <div class="card-body p-4 bg-light" style="min-height: 380px;">
+
+                    {% for q in questions %}
+                        <div class="question-step" id="step-{{ forloop.counter }}" style="{% if not forloop.first %}display: none;{% endif %}">
+                            <!-- AI Question Bubble -->
+                            <div class="d-flex gap-3 mb-4">
+                                <div class="company-logo-placeholder flex-shrink-0" style="width: 44px; height: 44px; background: var(--navy-800); color: white; font-size: 1.2rem;">
+                                    <i class="bi bi-robot"></i>
+                                </div>
+                                <div class="card border-0 shadow-sm p-3 bg-white text-dark" style="border-radius: 0px 18px 18px 18px; max-width: 85%;">
+                                    <div class="fw-bold text-navy small mb-1">AI Screening Interviewer</div>
+                                    <p class="mb-0 leading-relaxed fs-6">{{ q.question_text }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Candidate Answer Input Area -->
+                            <div class="mt-4 bg-white p-3 rounded-3 shadow-sm border">
+                                <label for="answer-input-{{ q.pk }}" class="form-label fw-bold small text-muted mb-2">
+                                    <i class="bi bi-pencil-square me-1"></i>Your Written Answer (Short Answer):
+                                </label>
+                                <textarea id="answer-input-{{ q.pk }}" data-qnum="{{ forloop.counter }}" data-qpk="{{ q.pk }}" data-islast="{% if forloop.last %}true{% else %}false{% endif %}" class="form-control mb-3 answer-textarea" rows="4" placeholder="Type your answer here (or leave blank if unsure and click Next Question)..."></textarea>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted"><i class="bi bi-info-circle me-1"></i>You may skip or answer brief details.</small>
+                                    <button type="button" class="btn btn-emerald submit-answer-btn" data-step="{{ forloop.counter }}">
+                                        {% if forloop.last %}
+                                            <i class="bi bi-check2-circle me-1"></i>Submit &amp; Finish Interview
+                                        {% else %}
+                                            Next Question <i class="bi bi-arrow-right ms-1"></i>
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- Re-Attempt Request Modal -->
+<div class="modal fade" id="reattemptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{% url 'matching_app:request_interview_reattempt' session.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-arrow-counterclockwise me-2 text-emerald"></i>Request Interview Re-Attempt</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        Please explain why you need to re-attempt this interview session (e.g. internet disconnect, hardware failure, accidental tab switch).
+                    </p>
+                    <div class="mb-3">
+                        <label for="reattempt-reason" class="form-label fw-bold small text-navy">Reason / Explanatory Note:</label>
+                        <textarea id="reattempt-reason" name="reason" class="form-control" rows="4" placeholder="Explain the technical issue or reason here..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-emerald fw-bold">Submit Re-Attempt Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Warning Proctoring Modal -->
+<div class="modal fade" id="tabSwitchModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>PROCTORING WARNING ALERT</h5>
+            </div>
+            <div class="modal-body text-center p-4">
+                <i class="bi bi-shield-slash-fill display-1 text-danger d-block mb-3"></i>
+                <h4 class="fw-bold text-dark mb-2">Tab Switching / Window Departure Detected!</h4>
+                <p class="text-muted mb-3">
+                    You navigated away from the active interview window. This session is strictly proctored. Please stay on this tab until your interview is finished.
+                </p>
+                <div class="alert alert-danger py-3 px-3 fw-bold fs-5" id="modal-warning-text">
+                    WARNING <span id="warning-num">1</span> OF 3 PERMITTED
+                </div>
+                <small class="text-muted d-block">Exceeding 3 tab switch warnings will automatically terminate your interview immediately.</small>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-danger btn-lg px-4 fw-bold" id="acknowledge-btn">
+                    OK, I Understand &amp; Continue Interview
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if session.status == 'In Progress' or session.status == 'Pending' %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const sessionId = "{{ session.id }}";
+    const totalQuestions = {{ total_questions }};
+    let currentStep = 1;
+    let warningCount = {{ session.tab_switch_count }};
+    const csrfToken = "{{ csrf_token }}";
+
+    const tabSwitchModalElement = document.getElementById("tabSwitchModal");
+    const tabSwitchModal = new bootstrap.Modal(tabSwitchModalElement);
+
+    let tabLeft = false;
+    let isSendingTabSwitch = false;
+
+    function updateProctorBadge(count) {
+        const badge = document.getElementById("proctor-badge");
+        if (!badge) return;
+        if (count > 0) {
+            badge.className = "badge bg-danger text-white px-3 py-2 fs-6";
+            badge.innerHTML = `<i class="bi bi-shield-exclamation me-1"></i>Proctoring Warning (${count}/3)`;
+        } else {
+            badge.className = "badge bg-success px-3 py-2 fs-6";
+            badge.innerHTML = `<i class="bi bi-shield-check me-1"></i>Proctoring Active (0/3 Warnings)`;
+        }
+    }
+
+    // Initialize badge state on load
+    updateProctorBadge(warningCount);
+
+    // Live Countdown Timer Engine
+    let remainingSeconds = {{ remaining_seconds|default:600 }};
+    const timerDisplay = document.getElementById("timer-countdown");
+    let isExpired = false;
+
+    function updateTimerDisplay(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (timerDisplay) timerDisplay.innerText = formatted;
+
+        const timerBadge = document.getElementById("interview-timer-badge");
+        if (timerBadge) {
+            if (seconds <= 120) {
+                timerBadge.className = "badge bg-danger text-white px-3 py-2 fs-6 fw-bold";
+            } else if (seconds <= 300) {
+                timerBadge.className = "badge bg-warning text-dark px-3 py-2 fs-6 fw-bold";
+            }
+        }
+    }
+
+    updateTimerDisplay(remainingSeconds);
+
+    if (remainingSeconds > 0) {
+        const timerInterval = setInterval(function() {
+            if (isExpired) {
+                clearInterval(timerInterval);
+                return;
+            }
+            remainingSeconds--;
+            updateTimerDisplay(remainingSeconds);
+
+            if (remainingSeconds <= 0) {
+                isExpired = true;
+                clearInterval(timerInterval);
+                handleTimeExpiration();
+            }
+        }, 1000);
+    } else {
+        handleTimeExpiration();
+    }
+
+    function handleTimeExpiration() {
+        document.querySelectorAll(".answer-textarea").forEach(el => el.disabled = true);
+        document.querySelectorAll(".submit-answer-btn").forEach(el => el.disabled = true);
+
+        fetch(`/interview/${sessionId}/expire/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert("⏰ Time Expired! Your interview duration limit has ended. Your answers have been submitted automatically.");
+            window.location.reload();
+        })
+        .catch(err => {
+            window.location.reload();
+        });
+    }
+
+    function showTerminationModal(count) {
+        const modalHeader = document.querySelector("#tabSwitchModal .modal-header");
+        const modalTitle = document.querySelector("#tabSwitchModal .modal-title");
+        const modalBody = document.querySelector("#tabSwitchModal .modal-body");
+        const ackBtn = document.getElementById("acknowledge-btn");
+
+        if (modalHeader) modalHeader.className = "modal-header bg-dark text-white";
+        if (modalTitle) modalTitle.innerHTML = `<i class="bi bi-x-octagon-fill text-danger me-2"></i>INTERVIEW TERMINATED`;
+
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <i class="bi bi-shield-x display-1 text-danger d-block mb-3"></i>
+                <h4 class="fw-bold text-danger mb-2">Maximum Tab Switches Exceeded!</h4>
+                <p class="text-dark fw-semibold mb-3">
+                    You have switched tabs/windows ${count} times during this proctored interview session.
+                </p>
+                <div class="alert alert-danger py-3 px-3 fw-bold fs-6">
+                    🛑 ACCESS REVOKED: Your interview session has been automatically terminated and submitted to the recruiter.
+                </div>
+                <small class="text-muted d-block">All input forms are disabled. Click below to view your session summary.</small>
+            `;
+        }
+
+        if (ackBtn) {
+            ackBtn.className = "btn btn-danger btn-lg px-4 fw-bold";
+            ackBtn.innerHTML = `<i class="bi bi-box-arrow-right me-1"></i>View Session Summary`;
+            ackBtn.onclick = function() {
+                window.location.reload();
+            };
+        }
+
+        tabSwitchModal.show();
+    }
+
+    function showWarningModal(count) {
+        const modalHeader = document.querySelector("#tabSwitchModal .modal-header");
+        const modalTitle = document.querySelector("#tabSwitchModal .modal-title");
+        const modalBody = document.querySelector("#tabSwitchModal .modal-body");
+        const ackBtn = document.getElementById("acknowledge-btn");
+
+        if (modalHeader) modalHeader.className = "modal-header bg-danger text-white";
+        if (modalTitle) modalTitle.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>PROCTORING WARNING ALERT`;
+
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <i class="bi bi-shield-slash-fill display-1 text-danger d-block mb-3"></i>
+                <h4 class="fw-bold text-dark mb-2">Tab Switching / Window Departure Detected!</h4>
+                <p class="text-muted mb-3">
+                    You navigated away from the active interview window. This session is strictly proctored. Please stay on this tab until your interview is finished.
+                </p>
+                <div class="alert alert-danger py-3 px-3 fw-bold fs-5" id="modal-warning-text">
+                    WARNING ${count} OF 3 PERMITTED
+                </div>
+                <small class="text-muted d-block">Exceeding 3 tab switch warnings will automatically terminate your interview immediately.</small>
+            `;
+        }
+
+        if (ackBtn) {
+            ackBtn.className = "btn btn-danger btn-lg px-4 fw-bold";
+            ackBtn.innerHTML = `OK, I Understand &amp; Continue Interview`;
+            ackBtn.onclick = function() {
+                tabSwitchModal.hide();
+                document.querySelectorAll(".answer-textarea").forEach(el => el.disabled = false);
+                const activeTextarea = document.querySelector(`#step-${currentStep} textarea`);
+                if (activeTextarea) {
+                    activeTextarea.focus();
+                }
+            };
+        }
+
+        tabSwitchModal.show();
+    }
+
+    function recordViolation() {
+        if (isSendingTabSwitch) return;
+        isSendingTabSwitch = true;
+
+        document.querySelectorAll(".answer-textarea").forEach(el => el.disabled = true);
+
+        fetch(`/interview/${sessionId}/tab-switch/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            warningCount = data.tab_switch_count;
+            updateProctorBadge(warningCount);
+
+            if (data.terminated) {
+                showTerminationModal(warningCount);
+            } else {
+                showWarningModal(warningCount);
+            }
+        })
+        .catch(err => {
+            console.error("Tab switch recording error:", err);
+            showWarningModal(warningCount + 1);
+        })
+        .finally(() => {
+            isSendingTabSwitch = false;
+        });
+    }
+
+    // Detect when candidate leaves or returns to tab
+    document.addEventListener("visibilitychange", function() {
+        if (document.hidden) {
+            tabLeft = true;
+        } else if (tabLeft) {
+            tabLeft = false;
+            recordViolation();
+        }
+    });
+
+    window.addEventListener("blur", function() {
+        tabLeft = true;
+    });
+
+    window.addEventListener("focus", function() {
+        if (tabLeft) {
+            tabLeft = false;
+            recordViolation();
+        }
+    });
+
+    // Handle Question Answer Submission
+    document.querySelectorAll(".submit-answer-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const step = parseInt(this.getAttribute("data-step"));
+            const currentStepContainer = document.getElementById(`step-${step}`);
+            const textarea = currentStepContainer.querySelector("textarea");
+            const qpk = textarea.getAttribute("data-qpk");
+            const isLast = textarea.getAttribute("data-islast") === "true";
+            const answerText = textarea.value.trim();
+
+            this.disabled = true;
+            this.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Saving...`;
+
+            fetch(`/interview/${sessionId}/answer/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    "question_id": qpk,
+                    "answer_text": answerText,
+                    "finish": isLast ? "true" : "false"
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.is_completed) {
+                    window.location.reload();
+                } else {
+                    currentStepContainer.style.display = "none";
+                    const nextStepContainer = document.getElementById(`step-${step + 1}`);
+                    if (nextStepContainer) {
+                        nextStepContainer.style.display = "block";
+                        currentStep = step + 1;
+                        
+                        const percent = Math.round((currentStep / totalQuestions) * 100);
+                        document.getElementById("question-tracker").innerText = `Question ${currentStep} of ${totalQuestions}`;
+                        document.getElementById("progress-percent").innerText = `${percent}% Completed`;
+                        document.getElementById("interview-progress-bar").style.width = `${percent}%`;
+                        
+                        const nextTextarea = nextStepContainer.querySelector("textarea");
+                        if (nextTextarea) nextTextarea.focus();
+                    }
+                }
+            })
+            .catch(err => {
+                alert("Failed to submit answer. Please try again.");
+                this.disabled = false;
+            });
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

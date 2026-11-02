@@ -1,0 +1,55 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Send Message to {{ recipient.username }} | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-1">
+    <div class="col-md-7 col-lg-5">
+        <div class="card shadow-md border-0">
+            <div class="card-header bg-navy text-white text-center py-2 px-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-envelope-paper-fill text-emerald me-2" style="color: var(--emerald-500);"></i>Send Message
+                </h5>
+                <p class="text-slate-300 small mb-0" style="color: #cbd5e1;">Recipient: <strong>{{ recipient.username }}</strong></p>
+            </div>
+            <div class="card-body p-3">
+                {% if related_job %}
+                    <div class="alert alert-info py-1 px-3 small mb-2">
+                        <i class="bi bi-briefcase me-1"></i>Regarding Job Opening: <strong>{{ related_job.job_title }}</strong>
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-2">
+                        <label for="{{ form.subject.id_for_label }}" class="form-label small fw-semibold mb-1">Subject</label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}
+                            <div class="text-danger small mt-1">{{ form.subject.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.body.id_for_label }}" class="form-label small fw-semibold mb-1">Message Content</label>
+                        <textarea name="body" id="{{ form.body.id_for_label }}" class="form-control form-control-sm" rows="3" placeholder="Type your message here...">{{ form.body.value|default:'' }}</textarea>
+                        {% if form.body.errors %}
+                            <div class="text-danger small mt-1">{{ form.body.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'matching_app:inbox' %}" class="btn btn-sm btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-sm btn-emerald px-4 fw-bold">
+                            <i class="bi bi-send me-1"></i>Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

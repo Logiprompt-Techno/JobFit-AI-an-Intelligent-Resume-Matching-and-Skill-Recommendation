@@ -1,0 +1,36 @@
+skill,category
+Python,Programming
+Django,Web Framework
+Flask,Web Framework
+JavaScript,Programming
+React,Frontend Framework
+Vue,Frontend Framework
+HTML,Frontend
+CSS,Frontend
+Bootstrap,CSS Framework
+SQL,Database
+PostgreSQL,Database
+SQLite,Database
+MySQL,Database
+MongoDB,Database
+Docker,DevOps
+Kubernetes,DevOps
+AWS,Cloud
+Azure,Cloud
+GCP,Cloud
+Git,Version Control
+Machine Learning,AI/ML
+NLP,AI/ML
+spaCy,AI/ML
+Scikit-Learn,AI/ML
+TensorFlow,AI/ML
+PyTorch,AI/ML
+REST API,Web
+GraphQL,Web
+Pandas,Data Science
+NumPy,Data Science
+Linux,System Admin
+Java,Programming
+C++,Programming
+Go,Programming
+Agile,Management

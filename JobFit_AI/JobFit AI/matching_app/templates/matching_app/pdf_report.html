@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Match &amp; Skill Gap Evaluation Report - {{ resume.candidate_name }}</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #0f172a; margin: 30px; line-height: 1.5; }
+        .header { border-bottom: 3px solid #10b981; padding-bottom: 15px; margin-bottom: 25px; }
+        .header h1 { font-size: 24px; color: #0f172a; margin: 0; }
+        .header p { color: #64748b; margin: 5px 0 0 0; }
+        .section-title { background: #0f172a; color: #ffffff; padding: 8px 12px; font-weight: bold; margin-top: 25px; margin-bottom: 15px; border-radius: 4px; }
+        .card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin-bottom: 15px; background: #ffffff; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; background: #ecfdf5; color: #059669; border: 1px solid #10b981; margin-right: 5px; }
+        .badge-missing { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .table th, .table td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; font-size: 13px; }
+        .table th { background: #f1f5f9; color: #1e293b; }
+        .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 15px; font-size: 11px; color: #94a3b8; text-align: center; }
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="margin-bottom: 20px;">
+        <button onclick="window.print()" style="background: #10b981; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 4px; cursor: pointer;">
+            Print / Save as PDF
+        </button>
+    </div>
+
+    <div class="header">
+        <h1>JobFit AI – Candidate Evaluation &amp; Match Report</h1>
+        <p>Generated on {% now "F d, Y" %} | Candidate Resume ID: #{{ resume.pk }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Candidate Overview</h3>
+        <p><strong>Full Name:</strong> {{ resume.candidate_name|default:"Not specified" }}</p>
+        <p><strong>Email Address:</strong> {{ resume.email|default:"Not specified" }}</p>
+        <p><strong>Phone:</strong> {{ resume.phone|default:"Not specified" }}</p>
+        <p><strong>Resume Quality Score:</strong> <strong>{{ resume_score_data.score }}/100</strong> (Grade: {{ resume_score_data.grade }})</p>
+        <p><strong>Extracted Skills:</strong> {{ resume.extracted_skills|default:"None extracted" }}</p>
+    </div>
+
+    <div class="section-title">Evaluated Job Match Results &amp; Skill Gap Analytics</div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Job Title</th>
+                <th>Company</th>
+                <th>Match Score</th>
+                <th>Missing Skills</th>
+                <th>Recommended Certifications</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in ranked_results %}
+                <tr>
+                    <td><strong>{{ result.job.job_title }}</strong></td>
+                    <td>{{ result.job.company_name }}</td>
+                    <td><strong>{{ result.match_percentage }}%</strong></td>
+                    <td>{{ result.missing_skills|default:"None (Full Match!)" }}</td>
+                    <td>{{ result.recommended_skills|default:"No certification gap identified." }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        JobFit AI – Intelligent Resume-Based Job Matching &amp; Skill Recommendation Platform
+    </div>
+
+</body>
+</html>

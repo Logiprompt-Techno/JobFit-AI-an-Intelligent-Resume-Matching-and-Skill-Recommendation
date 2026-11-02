@@ -1,0 +1,87 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}Resumes | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-file-earmark-person text-navy me-2"></i>Uploaded Resumes</h2>
+        <p class="text-muted mb-0">View all uploaded candidate resumes and run job matching.</p>
+    </div>
+    <a href="{% url 'matching_app:upload_resume' %}" class="btn btn-cyan">
+        <i class="bi bi-cloud-upload me-1"></i>Upload New Resume
+    </a>
+</div>
+
+{% if resumes %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for resume in resumes %}
+            <div class="col">
+                <div class="card h-100 card-hover-lift shadow-sm border-0 position-relative">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title fw-bold text-dark mb-0">
+                                {% if resume.candidate_name %}
+                                    {{ resume.candidate_name }}
+                                {% else %}
+                                    <span class="text-muted italic">Unnamed Candidate</span>
+                                {% endif %}
+                            </h5>
+                            <span class="badge bg-light text-secondary border">
+                                <i class="bi bi-calendar3 me-1"></i>{{ resume.uploaded_at|date:"M d, Y" }}
+                            </span>
+                        </div>
+
+                        {% if resume.email %}
+                            <p class="card-text text-muted mb-1 small">
+                                <i class="bi bi-envelope me-1"></i>{{ resume.email }}
+                            </p>
+                        {% endif %}
+                        {% if resume.phone %}
+                            <p class="card-text text-muted mb-2 small">
+                                <i class="bi bi-telephone me-1"></i>{{ resume.phone }}
+                            </p>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <strong class="small text-uppercase text-muted d-block mb-2">Extracted Skills:</strong>
+                            {% if resume.extracted_skills %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for skill in resume.extracted_skills.split|slice:":5" %}
+                                        <span class="badge badge-cyan me-1 mb-1">{{ skill|cut:"," }}</span>
+                                    {% endfor %}
+                                    {% if resume.extracted_skills.split|length > 5 %}
+                                        <span class="badge bg-light text-dark mb-1">+more</span>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted small">No skills extracted yet.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'matching_app:resume_detail' resume.pk %}" class="btn btn-outline-primary btn-sm flex-fill">
+                                <i class="bi bi-eye me-1"></i>View Details
+                            </a>
+                            <a href="{% url 'matching_app:match_results' resume.pk %}" class="btn btn-cyan btn-sm flex-fill">
+                                <i class="bi bi-lightning-charge me-1"></i>Match Jobs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 bg-white rounded shadow-sm">
+        <i class="bi bi-file-earmark-arrow-up display-1 text-muted"></i>
+        <h4 class="mt-3 fw-bold">No Resumes Uploaded Yet</h4>
+        <p class="text-muted">Upload candidate resumes (PDF or DOCX) to get started with job matching.</p>
+        <a href="{% url 'matching_app:upload_resume' %}" class="btn btn-cyan mt-2">
+            <i class="bi bi-cloud-upload me-1"></i>Upload Resume
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

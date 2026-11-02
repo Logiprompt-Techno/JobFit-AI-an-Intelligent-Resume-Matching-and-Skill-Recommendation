@@ -1,0 +1,147 @@
+{% extends "matching_app/base.html" %}
+{% load static %}
+
+{% block title %}{{ company.name }} - Company Profile | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <a href="{% url 'matching_app:company_list' %}" class="btn btn-outline-navy btn-sm mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Back to Companies
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            {% if company.logo %}
+                <img src="{{ company.logo.url }}" alt="{{ company.name }}" class="company-logo-lg">
+            {% else %}
+                <div class="company-logo-placeholder" style="width: 70px; height: 70px; font-size: 2rem;">
+                    {{ company.name|slice:":1"|upper }}
+                </div>
+            {% endif %}
+            <div>
+                <h2 class="fw-bold mb-0 text-dark">{{ company.name }}</h2>
+                <span class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ company.location|default:"Global" }}</span>
+            </div>
+        </div>
+    </div>
+    {% if user.is_authenticated %}
+        <div class="d-flex gap-2">
+            {% if user.is_staff or user.is_superuser %}
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteCompanyModal">
+                    <i class="bi bi-trash me-1"></i>Delete Fraudulent Company
+                </button>
+            {% elif user.profile and user.profile.role == 'RECRUITER' %}
+                <a href="{% url 'matching_app:company_edit' company.pk %}" class="btn btn-outline-navy">
+                    <i class="bi bi-pencil me-1"></i>Edit Profile
+                </a>
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCompanyModal">
+                    <i class="bi bi-trash me-1"></i>Delete Company
+                </button>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-info-circle text-emerald me-2" style="color: var(--emerald-500);"></i>About {{ company.name }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted leading-relaxed mb-0">
+                    {{ company.description|default:"No company overview provided."|linebreaks }}
+                </p>
+            </div>
+        </div>
+
+        <h4 class="fw-bold mb-3"><i class="bi bi-briefcase me-2"></i>Active Job Openings ({{ jobs.count }})</h4>
+        {% if jobs %}
+            <div class="row g-3">
+                {% for job in jobs %}
+                    <div class="col-12">
+                        <div class="card card-hover-lift border-0 shadow-sm">
+                            <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <div>
+                                    <h5 class="fw-bold mb-1">
+                                        <a href="{% url 'matching_app:job_detail' job.pk %}" class="text-decoration-none text-dark">
+                                            {{ job.job_title }}
+                                        </a>
+                                    </h5>
+                                    <div class="d-flex gap-3 text-muted small">
+                                        <span><i class="bi bi-tag me-1"></i>{{ job.category }}</span>
+                                        <span><i class="bi bi-clock me-1"></i>{{ job.job_type }}</span>
+                                        <span><i class="bi bi-geo-alt me-1"></i>{{ job.location }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <a href="{% url 'matching_app:job_detail' job.pk %}" class="btn btn-emerald btn-sm">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-light text-center py-4 border">
+                No active job openings for {{ company.name }} at this time.
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-building me-2"></i>Company Details</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">Email</strong>
+                        <span class="fw-medium">{{ company.email|default:"Not specified" }}</span>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">Website</strong>
+                        {% if company.website %}
+                            <a href="{{ company.website }}" target="_blank" class="text-decoration-none fw-medium text-emerald" style="color: var(--emerald-600);">
+                                {{ company.website }} <i class="bi bi-box-arrow-up-right small ms-1"></i>
+                            </a>
+                        {% else %}
+                            <span class="text-muted">Not specified</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item px-0">
+                        <strong class="d-block text-muted small text-uppercase">Location</strong>
+                        <span class="fw-medium">{{ company.location|default:"Global" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user.is_authenticated and user.profile and user.profile.role == 'RECRUITER' or user.is_staff or user.is_superuser %}
+<!-- Delete Company Modal -->
+<div class="modal fade" id="deleteCompanyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                Are you sure you want to delete company profile <strong>"{{ company.name }}"</strong>?
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-navy" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'matching_app:company_delete' company.pk %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Delete Company</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

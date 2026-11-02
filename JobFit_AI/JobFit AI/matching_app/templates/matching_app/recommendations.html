@@ -1,0 +1,85 @@
+{% extends "matching_app/base.html" %}
+{% load static custom_filters %}
+
+{% block title %}Skill Recommendations - {{ resume.candidate_name|default:"Candidate" }} | JobFit AI{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <a href="{% url 'matching_app:match_results' resume.pk %}" class="btn btn-outline-primary btn-sm mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Back to Match Results
+        </a>
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-lightbulb text-warning me-2"></i>Skill Gap &amp; Certification Engine
+        </h2>
+        <p class="text-muted mb-0">
+            Targeted skill upgrade and certification roadmap for candidate <strong>{{ resume.candidate_name|default:"Candidate" }}</strong>.
+        </p>
+    </div>
+</div>
+
+{% if ranked_results %}
+    <div class="row g-4">
+        {% for result in ranked_results %}
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm border-0 card-hover-lift">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">{{ result.job.job_title }}</h5>
+                            <small class="text-muted"><i class="bi bi-building me-1"></i>{{ result.job.company_name }}</small>
+                        </div>
+                        <span class="badge badge-cyan fs-6">{{ result.match_percentage }}% Match</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Missing Skills Section -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-danger mb-2">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Identified Skill Gaps
+                            </h6>
+                            {% if result.missing_skills %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for skill in result.missing_skills|split_skills %}
+                                        <span class="badge badge-missing me-1 mb-1">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success py-2 mb-0 small border-0">
+                                    <i class="bi bi-check-circle me-1"></i>Candidate meets all mandatory skills for this role!
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Recommendations Section -->
+                        <div>
+                            <h6 class="fw-bold text-success mb-2">
+                                <i class="bi bi-award-fill me-1"></i>Suggested Certifications &amp; Training
+                            </h6>
+                            {% if result.recommended_skills %}
+                                <ul class="list-group list-group-flush">
+                                    {% for rec in result.recommended_skills|split_skills %}
+                                        <li class="list-group-item px-0 py-2 border-0 bg-transparent d-flex align-items-start">
+                                            <i class="bi bi-check2-square text-emerald me-2 mt-1" style="color: var(--emerald-500); font-size: 1.1rem; flex-shrink: 0;"></i>
+                                            <span class="text-dark fw-medium leading-relaxed">{{ rec }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted small mb-0">No extra certification suggestions required.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 bg-white rounded shadow-sm">
+        <i class="bi bi-lightbulb display-1 text-muted"></i>
+        <h4 class="mt-3">No Recommendations Available Yet</h4>
+        <p class="text-muted">Run job matching first to calculate missing skills and generate custom recommendations.</p>
+        <a href="{% url 'matching_app:match_results' resume.pk %}" class="btn btn-cyan mt-2">
+            <i class="bi bi-lightning-charge me-1"></i>Run Match Calculations
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

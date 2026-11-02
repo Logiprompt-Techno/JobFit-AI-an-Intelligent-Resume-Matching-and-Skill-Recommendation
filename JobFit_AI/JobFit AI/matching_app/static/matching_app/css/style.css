@@ -1,0 +1,456 @@
+/* ==========================================================================
+   JobFit AI - Intelligent Resume-Based Job Matching & Recommendation Platform
+   Theme Palette:
+     - Primary:   Dark Navy (#1E293B / #0F172A)
+     - Secondary: Emerald Green (#10B981)
+     - Accent:    Sky Blue (#38BDF8)
+     - Background: Light Gray (#F8FAFC)
+     - Cards:     White (#FFFFFF)
+     - Buttons:   Emerald Green (#10B981) with Navy Hover (#1E293B)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+:root {
+    /* Primary Colors */
+    --navy-950: #0f172a;
+    --navy-900: #1e293b;
+    --navy-800: #334155;
+    
+    /* Secondary & Accent Colors */
+    --emerald-600: #059669;
+    --emerald-500: #10b981;
+    --emerald-400: #34d399;
+    --emerald-50:  #ecfdf5;
+
+    --sky-500: #38bdf8;
+    --sky-400: #60a5fa;
+    --sky-50:  #f0f9ff;
+
+    /* Backgrounds & Surfaces */
+    --bg-main:   #f8fafc;
+    --card-bg:   #ffffff;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+
+    /* Shadows & Radii */
+    --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.12);
+    --shadow-emerald: 0 4px 14px rgba(16, 185, 129, 0.35);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --------------------------------------------------------------------------
+   1. Typography & Global Body Reset
+   -------------------------------------------------------------------------- */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--navy-950);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.02em;
+}
+
+/* --------------------------------------------------------------------------
+   2. Navbar & Header Styling
+   -------------------------------------------------------------------------- */
+.navbar-custom {
+    background-color: var(--navy-900) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.85rem 0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.25);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #ffffff !important;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-brand i {
+    color: var(--emerald-500);
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+}
+
+.navbar-nav .nav-link {
+    color: #cbd5e1 !important;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-nav .nav-link.active {
+    color: var(--emerald-400) !important;
+    background-color: rgba(16, 185, 129, 0.12);
+    font-weight: 600;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   3. Cards & Layout Micro-Interactions
+   -------------------------------------------------------------------------- */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--slate-300);
+}
+
+.card-hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--emerald-500);
+}
+
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--slate-100);
+    padding: 1.25rem 1.5rem;
+}
+
+.card-header.bg-navy {
+    background: var(--navy-900) !important;
+    color: #ffffff !important;
+}
+
+.card-header.bg-navy h4, 
+.card-header.bg-navy h5 {
+    color: #ffffff !important;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Hero Section */
+.hero-panel {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+    color: #ffffff;
+    border-radius: var(--radius-lg);
+    padding: 3.5rem 2.5rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-panel::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(15, 23, 42, 0) 70%);
+    pointer-events: none;
+}
+
+/* Stat Cards */
+.stat-card {
+    background: #ffffff;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--emerald-500);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    background: var(--emerald-50);
+    color: var(--emerald-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+}
+
+/* Company Logo Circle / Frame */
+.company-logo-md {
+    width: 54px;
+    height: 54px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--slate-200);
+    background: #ffffff;
+    padding: 4px;
+}
+
+.company-logo-lg {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--slate-200);
+    background: #ffffff;
+    padding: 6px;
+}
+
+.company-logo-placeholder {
+    width: 54px;
+    height: 54px;
+    border-radius: var(--radius-md);
+    background: var(--navy-900);
+    color: var(--emerald-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   4. Buttons & Interactive Controls
+   -------------------------------------------------------------------------- */
+.btn {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.925rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+/* Primary Button: Emerald Green (#10B981) -> Dark Navy (#1E293B) Hover */
+.btn-emerald, .btn-primary {
+    background-color: var(--emerald-500) !important;
+    border: 1px solid var(--emerald-600) !important;
+    color: #ffffff !important;
+    box-shadow: var(--shadow-emerald);
+}
+
+.btn-emerald:hover, .btn-emerald:focus,
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--navy-900) !important;
+    border-color: var(--navy-950) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.3) !important;
+}
+
+.btn-navy {
+    background-color: var(--navy-900) !important;
+    border: 1px solid var(--navy-950) !important;
+    color: #ffffff !important;
+}
+
+.btn-navy:hover, .btn-navy:focus {
+    background-color: var(--emerald-500) !important;
+    border-color: var(--emerald-600) !important;
+    color: #ffffff !important;
+}
+
+.btn-outline-emerald {
+    color: var(--emerald-600) !important;
+    border-color: var(--emerald-500) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-emerald:hover {
+    background-color: var(--emerald-500) !important;
+    color: #ffffff !important;
+}
+
+.btn-outline-navy {
+    color: var(--navy-900) !important;
+    border-color: var(--slate-300) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-navy:hover {
+    background-color: var(--navy-900) !important;
+    color: #ffffff !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Form Controls & Inputs
+   -------------------------------------------------------------------------- */
+.form-control, .form-select {
+    border: 1px solid var(--slate-300);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.9rem;
+    font-size: 0.95rem;
+    color: var(--navy-950);
+    transition: var(--transition);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--emerald-500);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--slate-800);
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+}
+
+/* --------------------------------------------------------------------------
+   6. Custom Badges & Skill Tags
+   -------------------------------------------------------------------------- */
+.badge {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    padding: 0.4em 0.75em;
+    border-radius: var(--radius-full);
+}
+
+.badge-skill {
+    background-color: var(--slate-100);
+    color: var(--navy-900);
+    border: 1px solid var(--slate-200);
+    font-size: 0.825rem;
+}
+
+.badge-emerald {
+    background-color: var(--emerald-50);
+    color: var(--emerald-600);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-sky {
+    background-color: var(--sky-50);
+    color: #0284c7;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.badge-missing {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.badge-recommended {
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+/* --------------------------------------------------------------------------
+   7. Match Percentage Display & Score Cards
+   -------------------------------------------------------------------------- */
+.match-score-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: var(--shadow-sm);
+}
+
+.match-high {
+    background: var(--emerald-50);
+    color: var(--emerald-600);
+    border: 3px solid var(--emerald-500);
+}
+
+.match-moderate {
+    background: var(--sky-50);
+    color: #0284c7;
+    border: 3px solid var(--sky-500);
+}
+
+.match-partial {
+    background: #fffbeb;
+    color: #b45309;
+    border: 3px solid #f59e0b;
+}
+
+.match-low {
+    background: #f8fafc;
+    color: var(--slate-600);
+    border: 3px solid var(--slate-300);
+}
+
+/* --------------------------------------------------------------------------
+   8. Preformatted Code & Text
+   -------------------------------------------------------------------------- */
+pre {
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.85rem;
+    background-color: var(--navy-950);
+    color: #e2e8f0;
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--navy-800);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+pre::-webkit-scrollbar {
+    width: 6px;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: var(--slate-700);
+    border-radius: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   9. Footer Styling
+   -------------------------------------------------------------------------- */
+footer {
+    background-color: var(--navy-950) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+}
+
+footer small {
+    letter-spacing: 0.2px;
+}
